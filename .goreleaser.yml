@@ -1,0 +1,49 @@
+before:
+  hooks:
+    - go mod download
+builds:
+  - id: default
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    asmflags:
+      - all=-trimpath={{.Env.GOPATH}}
+    gcflags:
+      - all=-trimpath={{.Env.GOPATH}}
+    # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser`.
+    ldflags:
+      - -s -w -X github.com/upvestco/httpsignature-proxy/cmd.version={{.Version}} -X github.com/upvestco/httpsignature-proxy/cmd.commit={{.Commit}} -X github.com/upvestco/httpsignature-proxy/cmd.date={{.Date}} -X github.com/upvestco/httpsignature-proxy/cmd.builtBy=goreleaser
+    env:
+      - CGO_ENABLED=0
+      - GO111MODULE=on
+    mod_timestamp: "{{ .CommitTimestamp }}"
+archives:
+  - id: default
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    replacements:
+      amd64: 64-bit
+      darwin: macOS
+      linux: Linux
+      windows: Windows
+    format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - README.md
+      - LICENSE
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
