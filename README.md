@@ -30,6 +30,20 @@ Use "httpsignature-proxy [command] --help" for more information about a command.
 
 ```sh
 $ ./httpsignature-proxy start --help
+Starts the proxy on localhost for signing HTTP-requests
+
+Usage:
+  httpsignature-proxy start [flags]
+
+Flags:
+  -h, --help                        help for start
+  -k, --privateKey string           filename of the private key file
+  -p, --privateKeyPassword string   password of the private key
+  -s, --serverBaseUrl string        server base URL to pipe the requests to
+
+Global Flags:
+      --config string   config file (default is $HOME/.httpsignature-proxy.yaml)
+
 ```
 
 ## Configuration
