@@ -13,21 +13,31 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"strings"
 
+	"github.com/mitchellh/go-homedir"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-
-	homedir "github.com/mitchellh/go-homedir"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+)
+
+const (
+	envPrefixName = "HTTP_PROXY"
 )
 
 var cfgFile string
 
-// rootCmd represents the base command when called without any subcommands
+var errConfigInitFail = errors.New("failed to initialize config")
+
+// RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "httpsignature-proxy",
 	Short: "HTTP Proxy to add HTTP Signatures to your requests.",
@@ -40,8 +50,6 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
-
 	// Global flag for config file
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.httpsignature-proxy.yaml)")
 
@@ -51,7 +59,7 @@ func init() {
 }
 
 // initConfig reads in config file and ENV variables if set.
-func initConfig() {
+func initConfig(cmd *cobra.Command) {
 	if cfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
@@ -71,4 +79,25 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
 	}
+
+	bindFlags(cmd)
+}
+
+func bindFlags(cmd *cobra.Command) {
+	cmd.Flags().VisitAll(func(f *pflag.Flag) {
+		if strings.Contains(f.Name, "-") {
+			envVarSuffix := strings.ToUpper(strings.ReplaceAll(f.Name, "-", "_"))
+			if err := viper.BindEnv(f.Name, fmt.Sprintf("%s_%s", envPrefixName, envVarSuffix)); err != nil {
+				log.Fatal(errConfigInitFail)
+			}
+		}
+
+		// Apply the viper config value to the flag when the flag is not set and viper has a value
+		if !f.Changed && viper.IsSet(f.Name) {
+			val := viper.Get(f.Name)
+			if err := cmd.Flags().Set(f.Name, fmt.Sprintf("%v", val)); err != nil {
+				log.Fatal(errConfigInitFail)
+			}
+		}
+	})
 }
