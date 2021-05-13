@@ -1,0 +1,31 @@
+# so far, only go.list replacement
+# TODO: gather licenses of dependencies
+
+name: Upload go.list
+
+on: push
+
+env:
+  GITHUB_SHA: ${{ github.sha }}
+jobs:
+
+  upload:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+
+      - name: Generate
+        uses: cedrickring/golang-action@1.6.0
+        with:
+          args: go list -m all > go.list
+
+      - name: Upload
+        uses: actions/upload-artifact@v2
+        with:
+          name: go.list
+          path: go.list
+          retention-days: 30

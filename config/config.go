@@ -14,35 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package config
 
 import (
-	"fmt"
-	"runtime"
-
-	"github.com/spf13/cobra"
+	"time"
 )
 
-// Filled in at link-time by goreleaser
-var (
-	version = "dev"
-	commit  = "none"
-	date    = "unknown"
-	builtBy = "unknown"
-)
-
-var versionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "shows the application version",
-	Run: func(cmd *cobra.Command, args []string) {
-		printVersion()
-	},
-}
-
-func printVersion() {
-	fmt.Printf("httpsignature-proxy %s\nbuilt with %s from commit %s at %s by %s", version, runtime.Version(), commit, date, builtBy)
-}
-
-func init() {
-	RootCmd.AddCommand(versionCmd)
+type Config struct {
+	Port               int
+	BaseUrl            string
+	PrivateKeyFileName string
+	Password           string
+	DefaultTimeout     time.Duration
+	KeyID              string
 }

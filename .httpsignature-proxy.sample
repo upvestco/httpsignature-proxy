@@ -1,0 +1,5 @@
+private-key: "/absolute/path/to/your_key.ppk"
+private-key-password: "secret"
+server-base-url: "https://someurl"
+key-id: "your key id"
+port: 3000

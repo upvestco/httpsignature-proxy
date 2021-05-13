@@ -13,56 +13,90 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package cmd
 
 import (
 	"fmt"
+	"log"
+	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/upvestco/httpsignature-proxy/config"
+	"github.com/upvestco/httpsignature-proxy/service/runtime"
+	"github.com/upvestco/httpsignature-proxy/service/signer"
 )
 
 const (
-	privateKeyFileNameFlag = "privateKey"
-	privateKeyPasswordFlag = "privateKeyPassword"
-	serverBaseUrlFlag      = "serverBaseUrl"
+	privateKeyFileNameFlag = "private-key"
+	privateKeyPasswordFlag = "private-key-password"
+	keyIDFlag              = "key-id"
+	serverBaseUrlFlag      = "server-base-url"
+	portFlag               = "port"
 )
 
 var (
 	privateKeyFileName string
 	privateKeyPassword string
 	serverBaseUrl      string
+	keyID              string
+	port               int
 )
 
 var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Starts the proxy on localhost for signing HTTP-requests",
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		initConfig(cmd)
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
-		startProxy(3000)
+		// Setup the CLI arguments for start command
+
+		startProxy()
 	},
 }
 
 func init() {
-	// Setup the CLI arguments for start command
-	startCmd.Flags().StringVarP(&privateKeyFileName, privateKeyFileNameFlag, "k", "", "filename of the private key file")
+	// Register the start command
+	RootCmd.AddCommand(startCmd)
+	startCmd.Flags().StringVarP(&privateKeyFileName, privateKeyFileNameFlag, "f", "", "filename of the private key file")
 	_ = startCmd.MarkFlagRequired(privateKeyFileNameFlag)
 
-	startCmd.Flags().StringVarP(&privateKeyPassword, privateKeyPasswordFlag, "p", "", "password of the private key")
+	startCmd.Flags().StringVarP(&privateKeyPassword, privateKeyPasswordFlag, "P", "", "password of the private key")
 	_ = startCmd.MarkFlagRequired(privateKeyPasswordFlag)
 
 	startCmd.Flags().StringVarP(&serverBaseUrl, serverBaseUrlFlag, "s", "", "server base URL to pipe the requests to")
 	_ = startCmd.MarkFlagRequired(serverBaseUrlFlag)
 
-	// Register the start command
-	RootCmd.AddCommand(startCmd)
+	startCmd.Flags().StringVarP(&keyID, keyIDFlag, "i", "", "id of the private key")
+	_ = startCmd.MarkFlagRequired(keyIDFlag)
+
+	startCmd.Flags().IntVarP(&port, portFlag, "p", 3000, "port to start server")
 }
 
 // startProxy starts the listener
-func startProxy(port int) {
+func startProxy() {
 	fmt.Printf("Starting to listen on port %d\n", port)
 
 	fmt.Printf("- Using private key file %s for HTTP Signatures\n", privateKeyFileName)
+	fmt.Printf("- Using keyID %s for HTTP Signatures\n", keyID)
+
 	fmt.Printf("- Piping all requests to %s\n", serverBaseUrl)
+	cfg := &config.Config{
+		Port:               port,
+		BaseUrl:            serverBaseUrl,
+		PrivateKeyFileName: privateKeyFileName,
+		Password:           privateKeyPassword,
+		DefaultTimeout:     30 * time.Second,
+		KeyID:              keyID,
+	}
 
-	// TODO implement the HTTP-server to listen on given port and sign all the requests
+	lsBuilder, err := signer.NewLocalPrivateSchemeBuilder(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
 
+	r := runtime.NewRuntime(cfg, lsBuilder)
+	r.Run()
 }
