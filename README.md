@@ -41,10 +41,12 @@ Usage:
   httpsignature-proxy start [flags]
 
 Flags:
-  -h, --help                        help for start
-  -k, --privateKey string           filename of the private key file
-  -p, --privateKeyPassword string   password of the private key
-  -s, --serverBaseUrl string        server base URL to pipe the requests to
+  -h, --help                          help for start
+  -f, --private-key string            filename of the private key file
+  -P, --private-key-password string   password of the private key
+  -s, --server-base-url string        server base URL to pipe the requests to
+  -i, --key-id string                 key id for specified private key
+  -p, --port int                      port to start server
 
 Global Flags:
       --config string   config file (default is $HOME/.httpsignature-proxy.yaml)
