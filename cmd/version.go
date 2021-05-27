@@ -40,7 +40,7 @@ var versionCmd = &cobra.Command{
 }
 
 func printVersion() {
-	fmt.Printf("httpsignature-proxy %s\nbuilt with %s from commit %s at %s by %s", version, runtime.Version(), commit, date, builtBy)
+	fmt.Printf("httpsignature-proxy %s\nbuilt with %s from commit %s at %s by %s\n", version, runtime.Version(), commit, date, builtBy)
 }
 
 func init() {

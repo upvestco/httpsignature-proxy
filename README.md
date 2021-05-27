@@ -13,6 +13,25 @@ That's why this tool exists.You run it locally on your
 dev machine and use the localhost port in your Postman, Insomnia, etc.
 tool to make your calls to the Upvest Sandbox.
 
+## Installation
+
+You can download the binaries from the [Releases-page](https://github.com/upvestco/httpsignature-proxy/releases)
+
+OR
+
+You can install it from Homebrew:
+
+```shell
+brew tap upvestco/httpsignature-proxy
+brew install httpsignature-proxy
+```
+
+## Building locally on macOS
+
+```shell
+make
+```
+
 ## Usage
 
 ```sh
@@ -90,3 +109,8 @@ You can do test request with the sample config. To do it you should:
 ```sh
 curl -X GET "http://localhost:3000/headers" -H "accept: application/json"
 ```
+
+## Authors
+
+- [Kiryl Yalovik](https://github.com/kiryalovik)
+- [Juha Ristolainen](https://github.com/upvest-juha)
