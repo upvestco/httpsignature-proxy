@@ -19,7 +19,7 @@ builds:
     mod_timestamp: "{{ .CommitTimestamp }}"
 archives:
   - id: default
-    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    name_template: "{{ .ProjectName }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     replacements:
       amd64: 64-bit
       darwin: macOS
@@ -43,3 +43,67 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
+# .goreleaser.yml
+brews:
+  -
+    name: httpsignature-proxy
+
+    # GOARM to specify which 32-bit arm version to use if there are multiple versions
+    # from the build section. Brew formulas support atm only one 32-bit version.
+    # Default is 6 for all artifacts or each id if there a multiple versions.
+    goarm: 6
+
+    # NOTE: make sure the url_template, the token and given repo (github or gitlab) owner and name are from the
+    # same kind. We will probably unify this in the next major version like it is done with scoop.
+
+    # GitHub/GitLab repository to push the formula to
+    # Gitea is not supported yet, but the support coming
+    tap:
+      owner: upvestco
+      name: httpsignature-proxy
+      # Optionally a token can be provided, if it differs from the token provided to GoReleaser
+      #token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+      #token: "{{ .Env.GITHUB_TOKEN }}"
+
+
+    url_template: "https://github.com/upvestco/httpsignature-proxy/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+
+    # Git author used to commit to the repository.
+    # Defaults are shown.
+    commit_author:
+      name: upvestco
+      email: info@upvest.co
+
+    # Folder inside the repository to put the formula.
+    folder: Formula
+
+    # Caveats for the user of your binary.
+    #caveats: "How to use this binary"
+
+    # Your app's homepage.
+    homepage: "https://github.com/upvestco/httpsignature-proxy"
+
+    # Your app's description.
+    description: "Localhost HTTP Signatures proxy."
+
+    # SPDX identifier of your app's license.
+    license: "Apache 2.0"
+
+    # Setting this will prevent goreleaser to actually try to commit the updated
+    # formula - instead, the formula file will be stored on the dist folder only,
+    # leaving the responsibility of publishing it to the user.
+    # If set to auto, the release will not be uploaded to the homebrew tap
+    # in case there is an indicator for prerelease in the tag e.g. v1.0.0-rc1
+    # Default is false.
+    skip_upload: auto
+
+    # So you can `brew test` your formula.
+    # Default is empty.
+    test: |
+      system "#{bin}/httpsignature-proxy version"
+
+    # Custom install script for brew.
+    # Default is 'bin.install "program"'.
+    install: |
+      bin.install "httpsignature-proxy"
+
