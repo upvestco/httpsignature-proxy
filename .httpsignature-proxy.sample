@@ -1,5 +1,5 @@
-private-key: "/absolute/path/to/your_key.ppk"
-private-key-password: "secret"
-server-base-url: "https://someurl"
+private-key: "./private_key_example.ppk"
+private-key-password: "123456"
+server-base-url: "http://httpbin.org"
 key-id: "your key id"
 port: 3000
