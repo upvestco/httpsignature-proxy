@@ -49,13 +49,17 @@ Generated key should be im PEM format. You can see example in
 ## Configuration
 
 You can configure your proxy in a few different ways:
+
 - Passing in all config as command-line arguments
 - Specifying a config-file to use
 - Exposing the config in environment variables
+
 ### Config-file
 
 You can use a config-file `.httpsignature-proxy.yaml` to collect your config
-without having to pass it in via command line arguments. Please see `.httpsignature-proxy.sample` for reference.
+without having to pass it in via command line arguments.
+
+Please see `.httpsignature-proxy.sample` for reference.
 
 ### Environment variables
 

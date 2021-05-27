@@ -10,10 +10,6 @@ builds:
     goarch:
       - amd64
       - arm64
-    asmflags:
-      - all=-trimpath={{.Env.GOPATH}}
-    gcflags:
-      - all=-trimpath={{.Env.GOPATH}}
     # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser`.
     ldflags:
       - -s -w -X github.com/upvestco/httpsignature-proxy/cmd.version={{.Version}} -X github.com/upvestco/httpsignature-proxy/cmd.commit={{.Commit}} -X github.com/upvestco/httpsignature-proxy/cmd.date={{.Date}} -X github.com/upvestco/httpsignature-proxy/cmd.builtBy=goreleaser
