@@ -1,5 +1,5 @@
 BUILDTOOL=go
-VERSION=1.0.0-dev
+VERSION=1.1.0-dev
 BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
 COMMIT=$(shell git rev-parse HEAD)
 COMPILED=$(shell date -u '+%Y%m%d-%H%M%S')
@@ -8,7 +8,7 @@ LDFLAGS="-X github.com/upvestco/httpsignature-proxy/cmd.date=$(COMPILED) -X gith
 
 default: macos
 
-clean: 
+clean:
 	rm -rf httpsignature-*
 
 macos: clean

@@ -59,7 +59,26 @@ Global Flags:
 To generate private key which can be :used with http proxy use this command:
 
 ```sh
-ssh-keygen -t ecdsa -b 256 -f /absolute/path/to/your_key.ppk -m pem
+openssl ecparam -name prime256v1 -genkey -noout -out ./ec-priv-key.pem
+```
+
+After that you need to encrypt your key with the password:
+
+```sh
+openssl ec -in ./ec-priv-key.pem -out ./ec-encr-priv-key.pem -aes256
+```
+
+Remove unused key:
+
+```sh
+rm ./ec-priv-key.pem
+
+```
+
+Extract public key from private:
+
+```
+openssl ec -in ./ec-encr-priv-key.pem -pubout > ec-pub-key.pem
 ```
 
 Generated key should be im PEM format. You can see example in
