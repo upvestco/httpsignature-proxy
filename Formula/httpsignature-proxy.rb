@@ -5,25 +5,30 @@
 class HttpsignatureProxy < Formula
   desc "Localhost HTTP Signatures proxy."
   homepage "https://github.com/upvestco/httpsignature-proxy"
-  version "1.0.0"
+  version "1.1.0"
   license "Apache 2.0"
   bottle :unneeded
 
-  if OS.mac? && Hardware::CPU.intel?
-    url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.0.0/httpsignature-proxy_v1.0.0_macOS_64-bit.tar.gz"
-    sha256 "33fb50a2fdb57bb1898ce3a0f7c53cc1a88aba7433ae3a9a6635eb99f02ef5dc"
+  on_macos do
+    if Hardware::CPU.intel?
+      url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.1.0/httpsignature-proxy_v1.1.0_macOS_64-bit.tar.gz"
+      sha256 "060dec395f2d188a4380c2d0a20aa0b07fd7a566b5fbf69c7083236c6131588a"
+    end
+    if Hardware::CPU.arm?
+      url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.1.0/httpsignature-proxy_v1.1.0_macOS_arm64.tar.gz"
+      sha256 "51f546954744b0064c09cb2beb68eeea6774958e0a9fda50bd67957c2bd5b5a0"
+    end
   end
-  if OS.mac? && Hardware::CPU.arm?
-    url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.0.0/httpsignature-proxy_v1.0.0_macOS_arm64.tar.gz"
-    sha256 "6b8d54bb564c41b34cdbe495d777554ebc21302ec61e06bcbb7fea23d73b0367"
-  end
-  if OS.linux? && Hardware::CPU.intel?
-    url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.0.0/httpsignature-proxy_v1.0.0_Linux_64-bit.tar.gz"
-    sha256 "f2bc39f277eb8e8f99a2be8dea56fb23aaf30f2f2927f1fec624c213067e9ca5"
-  end
-  if OS.linux? && Hardware::CPU.arm? && Hardware::CPU.is_64_bit?
-    url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.0.0/httpsignature-proxy_v1.0.0_Linux_arm64.tar.gz"
-    sha256 "2901209bafd898d525f269f368f4c85b8d40d5c662edef0ab687225c548a64dc"
+
+  on_linux do
+    if Hardware::CPU.intel?
+      url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.1.0/httpsignature-proxy_v1.1.0_Linux_64-bit.tar.gz"
+      sha256 "ea849ce92bab88a744ee31054d8a5ce3855e8bf930cdda5d580e4237d49d0e5b"
+    end
+    if Hardware::CPU.arm? && Hardware::CPU.is_64_bit?
+      url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.1.0/httpsignature-proxy_v1.1.0_Linux_arm64.tar.gz"
+      sha256 "6935768b8563f747706303091bf4342bdfe4b11e5d34b6ead69a2a187e048dd8"
+    end
   end
 
   def install
