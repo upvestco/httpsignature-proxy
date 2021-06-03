@@ -5,29 +5,29 @@
 class HttpsignatureProxy < Formula
   desc "Localhost HTTP Signatures proxy."
   homepage "https://github.com/upvestco/httpsignature-proxy"
-  version "1.1.0"
+  version "1.1.1"
   license "Apache 2.0"
   bottle :unneeded
 
   on_macos do
     if Hardware::CPU.intel?
-      url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.1.0/httpsignature-proxy_v1.1.0_macOS_64-bit.tar.gz"
-      sha256 "060dec395f2d188a4380c2d0a20aa0b07fd7a566b5fbf69c7083236c6131588a"
+      url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.1.1/httpsignature-proxy_v1.1.1_macOS_64-bit.tar.gz"
+      sha256 "32a72ee8043c9be7a2adbfec4d32f452d1ec1c33c22decdc895b1a90e4182536"
     end
     if Hardware::CPU.arm?
-      url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.1.0/httpsignature-proxy_v1.1.0_macOS_arm64.tar.gz"
-      sha256 "51f546954744b0064c09cb2beb68eeea6774958e0a9fda50bd67957c2bd5b5a0"
+      url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.1.1/httpsignature-proxy_v1.1.1_macOS_arm64.tar.gz"
+      sha256 "57949df7ce307e023cb1090ea5fc6d4aeaa1255990b246f11aeadd323e52edee"
     end
   end
 
   on_linux do
     if Hardware::CPU.intel?
-      url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.1.0/httpsignature-proxy_v1.1.0_Linux_64-bit.tar.gz"
-      sha256 "ea849ce92bab88a744ee31054d8a5ce3855e8bf930cdda5d580e4237d49d0e5b"
+      url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.1.1/httpsignature-proxy_v1.1.1_Linux_64-bit.tar.gz"
+      sha256 "7c79170693764d9acd4462c3311fae2794d001d34207bf158d3cdf6dfc152aa6"
     end
     if Hardware::CPU.arm? && Hardware::CPU.is_64_bit?
-      url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.1.0/httpsignature-proxy_v1.1.0_Linux_arm64.tar.gz"
-      sha256 "6935768b8563f747706303091bf4342bdfe4b11e5d34b6ead69a2a187e048dd8"
+      url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.1.1/httpsignature-proxy_v1.1.1_Linux_arm64.tar.gz"
+      sha256 "7593d08258ab9bb4b462708dfbef260f09edf546f9fafd7ef7db0424f5895470"
     end
   end
 
