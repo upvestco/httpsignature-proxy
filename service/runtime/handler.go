@@ -31,6 +31,16 @@ import (
 	"github.com/upvestco/httpsignature-proxy/service/signer/schema"
 )
 
+var (
+	hostHeader           = http.CanonicalHeaderKey("host")
+	acceptEncodingHeader = http.CanonicalHeaderKey("accept-encoding")
+	acceptHeader         = http.CanonicalHeaderKey("accept")
+	connectionHeader     = http.CanonicalHeaderKey("connection")
+	userAgentHeader      = http.CanonicalHeaderKey("user-agent")
+
+	excludedHeaders = []string{hostHeader, acceptEncodingHeader, connectionHeader, acceptHeader, userAgentHeader}
+)
+
 type Handler struct {
 	cfg           *config.Config
 	requestSigner request.Signer
@@ -87,11 +97,21 @@ func (h *Handler) writeError(rw http.ResponseWriter, code int, err error) {
 
 func (h *Handler) copyHeaders(in *http.Request, out *http.Request) {
 	for headerName, value := range in.Header {
-		if headerName == "Host" {
+		if h.excludeHeader(headerName) {
 			continue
 		}
 		out.Header.Add(headerName, strings.Join(value, ","))
 	}
+}
+
+func (h *Handler) excludeHeader(headerName string) bool {
+	cHeaderName := http.CanonicalHeaderKey(headerName)
+	for _, excludedHeader := range excludedHeaders {
+		if excludedHeader == cHeaderName {
+			return true
+		}
+	}
+	return false
 }
 
 func (h *Handler) ServeHTTP(rw http.ResponseWriter, inReq *http.Request) {
