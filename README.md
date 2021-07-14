@@ -1,6 +1,6 @@
 # httpsignature-proxy
 
-tl;dr: Localhost HTTP Signatures proxy.
+Localhost HTTP Signatures proxy.
 
 The Upvest Investment API requires you to
 use [HTTP Signatures](https://tools.ietf.org/id/draft-ietf-httpbis-message-signatures-01.html)
@@ -26,9 +26,10 @@ brew tap upvestco/httpsignature-proxy
 brew install httpsignature-proxy
 ```
 
-## Building locally on macOS
+## Building locally
 
 ```shell
+git clone https://github.com/upvestco/httpsignature-proxy.git
 make
 ```
 
@@ -51,12 +52,15 @@ Flags:
 
 Global Flags:
       --config string   config file (default is $HOME/.httpsignature-proxy.yaml)
-
 ```
 
 ## Key generation
 
-To generate private key which can be :used with http proxy use this command:
+Upvest Investment API supports ECDSA and ed25519 types of private/public key pair.
+
+## Generate ECDSA key pair
+
+To generate private key which can be used with http proxy use this command:
 
 ```sh
 openssl ecparam -name prime256v1 -genkey -noout -out ./ec-priv-key.pem
@@ -72,7 +76,6 @@ Remove unused key:
 
 ```sh
 rm ./ec-priv-key.pem
-
 ```
 
 Extract public key from private:
@@ -83,6 +86,28 @@ openssl ec -in ./ec-encr-priv-key.pem -pubout > ec-pub-key.pem
 
 Generated key should be im PEM format. You can see example in
 `private_key_example.ppk` (password:`123456`)
+
+**Please note that the httpsignature-proxy is designed to use ECDSA key only.**
+
+## Generate ed25519 key pair
+
+OSx does not support the native generation of ed25519 private/public key pair.
+You can use the this way of generation **only on OS Unix based systems**.
+
+Generate private ed25519 key:
+
+```sh
+openssl genpkey -algorithm ed25519 -outform PEM -out ed25519.pem
+```
+
+Extract public key from private:
+
+```sh
+openssl pkey -outform DER -pubout -in ed25519.pem | tail -c +13 | \
+openssl base64 > ed25519.pub
+```
+
+**Please note that the httpsignature-proxy does not support es25519 key type.**
 
 ## Configuration
 
@@ -116,11 +141,11 @@ export HTTP_PROXY_PORT=3000
 
 You can do test request with the sample config. To do it you should:
 
-- Rename `.httpsignature-proxy.sample` to `.httpsignature-proxy.yaml`
+- Rename `.httpsignature-proxy.sample` to `httpsignature-proxy.yaml`
 - Start signature proxy:
 
 ```sh
-./http-signature-proxy --config .http.signature-proxy.yaml
+./http-signature-proxy --config ./httpsignature-proxy.yaml start
 ```
 
 - Do some request:
