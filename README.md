@@ -157,4 +157,5 @@ curl -X GET "http://localhost:3000/headers" -H "accept: application/json"
 ## Authors
 
 - [Kiryl Yalovik](https://github.com/kiryalovik)
+- [Mike Konobeevskiy](https://github.com/upvest-mike)
 - [Juha Ristolainen](https://github.com/upvest-juha)
