@@ -145,7 +145,7 @@ You can do test request with the sample config. To do it you should:
 - Start signature proxy:
 
 ```sh
-./http-signature-proxy --config ./httpsignature-proxy.yaml start
+./httpsignature-proxy --config ./httpsignature-proxy.yaml start
 ```
 
 - Do some request:
