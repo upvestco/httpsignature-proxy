@@ -42,7 +42,6 @@ type requestSigner struct {
 }
 
 func (e *requestSigner) Sign(req *http.Request) error {
-
 	m := material.NewMaterial()
 	if err := m.AppendHeaders(req.Header); err != nil {
 		return errors.Wrap(err, "Sign:Append error")
@@ -50,7 +49,7 @@ func (e *requestSigner) Sign(req *http.Request) error {
 
 	target := req.Method + " " + req.URL.Path
 	if len(req.URL.RawQuery) > 0 {
-		target = target + "/" + req.URL.RawQuery
+		target = target + "?" + req.URL.RawQuery
 	}
 
 	m.Append0("*request-target", strings.ToLower(target))
@@ -64,9 +63,9 @@ func (e *requestSigner) Sign(req *http.Request) error {
 	if err != nil {
 		return errors.Wrap(err, "Sign: ReadAll error")
 	}
+
 	m.PrepareWithBodyForSign(body)
 
 	signer := e.ssBuilder.GetDefaultPrivateKey()
 	return signer.SignRequest(m, req)
-
 }

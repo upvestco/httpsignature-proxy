@@ -9,7 +9,7 @@ tenant as well as ensure the request hasn't been
 tampered with on the way.
 
 This is good for security but can be cumbersome while developing.
-That's why this tool exists.You run it locally on your
+That's why this tool exists. You run it locally on your
 dev machine and use the localhost port in your Postman, Insomnia, etc.
 tool to make your calls to the Upvest Sandbox.
 
@@ -84,7 +84,7 @@ Extract public key from private:
 openssl ec -in ./ec-encr-priv-key.pem -pubout > ec-pub-key.pem
 ```
 
-Generated key should be im PEM format. You can see example in
+Generated key should be in PEM format. You can see an example in
 `private_key_example.ppk` (password:`123456`)
 
 **Please note that the httpsignature-proxy is designed to use ECDSA key only.**
@@ -92,7 +92,7 @@ Generated key should be im PEM format. You can see example in
 ## Generate ed25519 key pair
 
 OSx does not support the native generation of ed25519 private/public key pair.
-You can use the this way of generation **only on OS Unix based systems**.
+You can use this way of generation **only on OS Unix based systems**.
 
 Generate private ed25519 key:
 
@@ -114,7 +114,7 @@ openssl base64 > ed25519.pub
 You can configure your proxy in a few different ways:
 
 - Passing in all config as command-line arguments
-- Specifying a config-file to use
+- Specifying a configuration file to use
 - Exposing the config in environment variables
 
 ### Config-file
@@ -126,7 +126,7 @@ Please see `.httpsignature-proxy.sample` for reference.
 
 ### Environment variables
 
-You can use environment variables to collect you config without having
+You can use environment variables to collect your config without having
 to pass it in via command line arguments
 
 ```sh
@@ -139,7 +139,7 @@ export HTTP_PROXY_PORT=3000
 
 ## Example of usage
 
-You can do test request with the sample config. To do it you should:
+You can do a test request with the sample config. To do it you should:
 
 - Rename `.httpsignature-proxy.sample` to `httpsignature-proxy.yaml`
 - Start signature proxy:
@@ -148,7 +148,7 @@ You can do test request with the sample config. To do it you should:
 ./httpsignature-proxy --config ./httpsignature-proxy.yaml start
 ```
 
-- Do some request:
+- Do a request:
 
 ```sh
 curl -X GET "http://localhost:3000/headers" -H "accept: application/json"
