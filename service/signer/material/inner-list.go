@@ -41,7 +41,7 @@ func extractInnerList(src string) ([]byte, error) {
 			if s == '\\' {
 				cv = append(cv, s)
 				if !endOfTheItem(src, i) {
-					i = i + 1
+					i += 1
 					s = src[i]
 				}
 			}

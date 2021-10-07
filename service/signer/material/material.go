@@ -18,146 +18,140 @@ package material
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"net/textproto"
 	"strings"
 	"time"
 
+	"github.com/ory/x/randx"
 	"github.com/pkg/errors"
 )
 
-var (
-	ErrWrongValueSymbol = errors.New("wrong value symbol")
-	ErrImbalancedQuotes = errors.New("imbalanced quotes")
-	ErrWrongKeySymbol   = errors.New("wrong key symbol")
-
-	SignatureInput = textproto.CanonicalMIMEHeaderKey("Signature-Input")
-	Signature      = textproto.CanonicalMIMEHeaderKey("Signature")
+const (
+	ietfMethod          = "@method"
+	ietfPath            = "@path"
+	ietfQuery           = "@query"
+	ietfSignatureParams = "@signature-params"
 )
 
-func NewMaterial() *Material {
+var (
+	SignatureHeader      = textproto.CanonicalMIMEHeaderKey("Signature")
+	SignatureInputHeader = textproto.CanonicalMIMEHeaderKey("Signature-Input")
+	DigestHeader         = textproto.CanonicalMIMEHeaderKey("digest")
+)
+
+type Material struct {
+	Data           map[string]string
+	Names          []string
+	Created        string
+	Expires        string
+	Nonce          string
+	Body           []byte
+	SourceBody     []byte
+	SignatureInput string
+}
+
+func newMaterial() *Material {
 	return &Material{
-		list:  make(map[string]string),
-		Names: make([]string, 0),
+		Data:    make(map[string]string),
+		Names:   make([]string, 0),
+		Created: fmt.Sprintf("%d", time.Now().Unix()),
+		Nonce:   randx.MustString(10, randx.Numeric),
+		Expires: fmt.Sprintf("%d", time.Now().Add(time.Minute).Unix()),
 	}
 }
 
-type Material struct {
-	list    map[string]string
-	Names   []string
-	Created string
-	Data    []byte
+func (e *Material) GetBody(keyID string) ([]byte, string, error) {
+	quoteNames := make([]string, len(e.Names))
+	for i, s := range e.Names {
+		quoteNames[i] = fmt.Sprintf("%q", s)
+	}
+	names := strings.Join(quoteNames, " ")
+
+	signatureParams := fmt.Sprintf("(%s);keyid=%q;created=%s;nonce=%q;expires=%s", names, keyID, e.Created, e.Nonce, e.Expires)
+
+	e.CompleteWithSourceBody(ietfSignatureParams, signatureParams)
+
+	return e.Body, signatureParams, nil
+}
+
+func MaterialFromRequest(req *http.Request) (*Material, error) {
+	e := newMaterial()
+
+	if err := e.AppendHeaders(req.Header); err != nil {
+		return nil, errors.Wrap(err, "appendHeaders")
+	}
+
+	e.AppendValue(ietfMethod, req.Method)
+	if len(req.URL.Path) > 0 {
+		e.AppendValue(ietfPath, req.URL.Path)
+	}
+	body, err := GetRequestBody(req)
+	if err != nil {
+		return nil, errors.Wrap(err, "getRequestBody")
+	}
+	if len(body) > 0 {
+		e.addDigest(body, req.Header)
+	}
+	if len(req.URL.RawQuery) > 0 {
+		e.AppendValue(ietfQuery, "?"+req.URL.RawQuery)
+	}
+
+	return e, nil
+}
+
+func (e *Material) addDigest(body []byte, headers http.Header) {
+	data := sha256.Sum256(body)
+	hash := "SHA-256=" + base64.StdEncoding.EncodeToString(data[:])
+	headers.Set(DigestHeader, hash)
+	e.AppendValue("digest", hash)
 }
 
 func (e *Material) AppendHeaders(headers http.Header) error {
 	for k, v := range headers {
-		if err := e.Append(k, v); err != nil {
+		if err := e.AppendArray(k, v); err != nil {
 			return err
 		}
 	}
 	return nil
 }
-func (e *Material) Append(k string, v []string) error {
-	if k == Signature || k == SignatureInput {
+
+func (e *Material) AppendArray(k string, v []string) error {
+	if k == SignatureHeader || k == SignatureInputHeader {
 		return nil
 	}
-	nk, nv, err := e.normalize(k, v)
+	nk, nv, err := Normalise(k, v)
 	if err != nil {
-		return errors.Wrap(err, "normalization error")
+		return errors.Wrap(err, "normalisation error")
 	}
 	for i := 0; i < len(nk); i++ {
-		e.Append0(nk[i], nv[i])
+		e.AppendValue(nk[i], nv[i])
 	}
 	return nil
 }
 
-func (e *Material) Append0(k, v string) {
-	e.list[k] = v
+func (e *Material) AppendValue(k, v string) {
+	e.Data[k] = v
 	e.Names = append(e.Names, k)
-
 }
-func (e *Material) PrepareWithBodyForSign(body []byte) {
-	e.Created = fmt.Sprintf("%d", time.Now().Unix())
-	e.Append0("*created", e.Created)
+
+func (e *Material) CompleteWithSourceBody(postBodyData ...string) {
 	buf := new(bytes.Buffer)
 	for _, s := range e.Names {
-		buf.WriteString(e.format(s, e.list[s]))
+		buf.WriteString(Format(s, e.Data[s]))
 		buf.WriteByte('\n')
 	}
-	buf.Write(body)
-	e.Data = buf.Bytes()
-}
-
-func (e *Material) format(k, v string) string {
-	return fmt.Sprintf("%s: %s", k, v)
-}
-
-func (e *Material) normalize(k string, v []string) ([]string, []string, error) {
-	keyList := make([]string, 0)
-	valueList := make([]string, 0)
-	nk := strings.TrimSpace(strings.ToLower(k))
-	for i := range nk {
-		if !allowedForKey(nk[i]) {
-			return nil, nil, errors.Wrap(ErrWrongKeySymbol, nk)
+	if e.Body != nil {
+		buf.Write(e.Body)
+	}
+	if len(postBodyData) > 0 {
+		if e.Body != nil {
+			buf.WriteByte('\n')
 		}
+		buf.WriteString(Format(postBodyData[0], postBodyData[1]))
 	}
-	trimmed := make([]string, len(v))
-	for i := range v {
-		trimmed[i] = strings.TrimSpace(v[i])
-	}
-	nv := strings.Join(trimmed, ", ")
-	if len(nv) == 0 {
-		return []string{nk}, []string{""}, nil
-	}
-	vt, obj, err := parseHeaderValue(nv)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, nv)
-	}
-	switch vt {
-	case vTypeValue:
-		list := obj.([]string)
-		keyList = append(keyList, nk)
-		valueList = append(valueList, list[0])
-	case vTypeList:
-		list := obj.([]string)
-		keyList = append(keyList, nk)
-		valueList = append(valueList, strings.Join(list, ", "))
-	case vTypeInnerList:
-		list := obj.([]string)
-		keyList = append(keyList, nk+":0")
-		valueList = append(valueList, "()")
-		for i := range list {
-			keyList = append(keyList, fmt.Sprintf(nk+":%d", i+1))
-			valueList = append(valueList, fmt.Sprintf("(%s)", strings.Join(list[0:i+1], ", ")))
-		}
-	case vTypeMap:
-		list := obj.(map[string]string)
-		for k, v := range list {
-			keyList = append(keyList, fmt.Sprintf(nk+":%s", k))
-			valueList = append(valueList, fmt.Sprintf("%v", v))
-		}
-	}
-	return keyList, valueList, nil
-}
-
-func endOfTheItem(src string, i int) bool {
-	return i+1 < len(src) && src[i] == ',' && src[i+1] == ' '
-}
-
-func allowedForKey(n byte) bool {
-	return n == '_' || n == '-' || n == '.' || n == '*' || (n >= 'a' && n <= 'z') || (n >= '0' && n <= '9')
-}
-func allowedForValue(n byte) bool {
-	return n >= 32 && n <= 0x7f
-}
-
-func scipSpaces(src string, start int) int {
-	var k int
-	for k = start; k < len(src); k++ {
-		if src[k] != ' ' {
-			break
-		}
-	}
-	return k
+	e.Body = buf.Bytes()
 }

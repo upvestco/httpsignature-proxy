@@ -32,9 +32,9 @@ func parseList(src string) (interface{}, error) { //nolint
 				cv = append(cv, s)
 				list = append(list, string(cv))
 				cv = cv[:0]
-				i = i + 1
+				i += 1
 				if endOfTheItem(src, i) {
-					i = i + 1
+					i += 1
 				}
 				continue
 			}
@@ -56,7 +56,7 @@ func parseList(src string) (interface{}, error) { //nolint
 				if endOfTheItem(src, i) {
 					list = append(list, string(cv))
 					cv = cv[:0]
-					i = scipSpaces(src, i+1) - 1
+					i = getNextSpacePosition(src, i+1) - 1
 					continue
 				}
 				if !(allowedForValue(s)) {

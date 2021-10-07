@@ -17,77 +17,92 @@ limitations under the License.
 package schema
 
 import (
-    "crypto/ecdsa"
-    "crypto/rand"
-    "crypto/sha512"
-    b64 "encoding/base64"
-    "fmt"
-    "net/http"
-    "strings"
+	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/rand"
+	"crypto/sha512"
+	b64 "encoding/base64"
+	"fmt"
+	"net/http"
 
-    "github.com/pkg/errors"
+	"github.com/pkg/errors"
 
-    "github.com/upvestco/httpsignature-proxy/service/signer/material"
+	"github.com/upvestco/httpsignature-proxy/service/signer/logger"
+	"github.com/upvestco/httpsignature-proxy/service/signer/material"
 )
 
 type SigningSchemeBuilder interface {
-    GetDefaultPrivateKey() *Sign
-}
-
-type SigningSchema interface {
-    Sign(m *material.Material, w http.ResponseWriter) error
+	GetDefaultPrivateKey() *Sign
 }
 
 const (
-    MajorAlgo = "ed2019"
-    AlgoECDSA = "ECDSA"
-    EcKeyType = "EC PRIVATE KEY"
+	algoEd25519 = "Ed25519"
+	algoECDSA   = "ECDSA"
+)
+
+const (
+	AlgoECDSA = "ECDSA"
+	EcKeyType = "EC PRIVATE KEY"
 )
 
 var (
-    errUnsupportedAlgorithm = errors.New("unsupported algorithm")
-    errWrongPrivateKey      = errors.New("wrong private key")
+	errUnsupportedAlgorithm = errors.New("unsupported algorithm")
+	errWrongPrivateKey      = errors.New("wrong private key")
 )
 
 type Sign struct {
-    KeyId string
-    Algo  string
-    Pk    interface{}
+	KeyID string
+	Algo  string
+	Pk    interface{}
+	Pub   interface{}
 }
 
-func (e *Sign) SignRequest(m *material.Material, r *http.Request) error {
-    signBytes, err := e.signature(m)
-    if err != nil {
-        return errors.Wrap(err, "Error creating signature")
-    }
-    sign := b64.StdEncoding.EncodeToString(signBytes)
-    input := e.signatureInput(m)
-    r.Header.Add(material.SignatureInput, input)
-    r.Header.Add(material.Signature, fmt.Sprintf("sig1=:%s:", sign))
-    return nil
+func (e *Sign) SignRequest(m *material.Material, r *http.Request, log logger.Logger) error {
+	return errors.Wrap(e.sign(m, r.Header, log), "sign")
 }
 
-func (e *Sign) signature(m *material.Material) ([]byte, error) {
-    var sign []byte
-    var err error
-    switch e.Algo {
-    case AlgoECDSA:
-        pk, ok := e.Pk.(*ecdsa.PrivateKey)
-        if !ok {
-            return nil, errors.Wrap(errWrongPrivateKey, "not a ecdsa.PrivateKey")
-        }
-        hash := sha512.Sum512(m.Data)
-        sign, err = ecdsa.SignASN1(rand.Reader, pk, hash[:])
-        if err != nil {
-            return nil, errors.Wrap(err, "error signing with ecdsa.SignASN1")
-        }
-    default:
-        return nil, errUnsupportedAlgorithm
-    }
-    return sign, nil
+func (e *Sign) sign(m *material.Material, headers http.Header, log logger.Logger) error {
+	const sigID = "sig1"
+	body, signatureParams, err := m.GetBody(e.KeyID)
+	if err != nil {
+		return errors.Wrap(err, "GetBody")
+	}
+	signBytes, err := e.calculateSignBytes(body)
+	if err != nil {
+		return errors.Wrap(err, "calculateSignBytes")
+	}
+	hash := b64.StdEncoding.EncodeToString(signBytes)
+
+	headers.Set(material.SignatureInputHeader, fmt.Sprintf("%s=%s", sigID, signatureParams))
+	headers.Set(material.SignatureHeader, fmt.Sprintf("%s=:%s:", sigID, hash))
+	log.LogF(" - Header '%s' added with value '%s'\n", material.SignatureInputHeader, signatureParams)
+	log.LogF(" - Header '%s' added with value '%s'\n", material.SignatureHeader, hash)
+
+	return nil
 }
 
-func (e *Sign) signatureInput(m *material.Material) string {
-    return fmt.Sprintf("sig1=(%s); keyId=\"%s\"; alg=%s; created=%s",
-        strings.Join(m.Names, ", "), e.KeyId, MajorAlgo, m.Created)
+func (e *Sign) calculateSignBytes(message []byte) ([]byte, error) {
+	var signBytes []byte
+	var err error
+	switch e.Algo {
+	case algoEd25519:
+		pk, ok := e.Pk.(*ed25519.PrivateKey)
+		if !ok {
+			return nil, errors.Wrap(errWrongPrivateKey, "not a ed25519.PrivateKey")
+		}
+		signBytes = ed25519.Sign(*pk, message)
+	case algoECDSA:
+		pk, ok := e.Pk.(*ecdsa.PrivateKey)
+		if !ok {
+			return nil, errors.Wrap(errWrongPrivateKey, "not a ecdsa.PrivateKey")
+		}
+		hash := sha512.Sum512(message)
+		signBytes, err = ecdsa.SignASN1(rand.Reader, pk, hash[:])
+		if err != nil {
+			return nil, errors.Wrap(err, "signature SignASN1")
+		}
+	default:
+		return nil, errUnsupportedAlgorithm
+	}
+	return signBytes, nil
 }

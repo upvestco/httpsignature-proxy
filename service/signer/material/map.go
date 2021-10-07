@@ -48,10 +48,10 @@ func parseMap(src string) (interface{}, error) {
 				return nil, errors.Wrapf(err, "failed to get inner list  from %s", src[i:])
 			}
 		}
-		i = i + len(v)
+		i += len(v)
 		res[key] = string(v)
 		if endOfTheItem(src, i) {
-			i = scipSpaces(src, i+1)
+			i = getNextSpacePosition(src, i+1)
 		} else {
 			i++
 		}
@@ -64,7 +64,7 @@ func getKey(src string, sp int) (string, error) {
 	key := make([]byte, 0)
 	for i := sp; i < len(src); i++ {
 		s := src[i]
-		if allowedForKey(s) {
+		if allowedForKey(s) { // nolint
 			key = append(key, s)
 		} else if s == '=' {
 			return string(key), nil
@@ -112,4 +112,26 @@ func extractInnerValue(src string) ([]byte, error) {
 		cv = append(cv, s)
 	}
 	return cv, nil
+}
+
+func allowedForKey(n byte) bool {
+	return n == '_' || n == '-' || n == '.' || n == '*' || (n >= 'a' && n <= 'z') || (n >= '0' && n <= '9')
+}
+
+func allowedForValue(n byte) bool {
+	return n >= 32 && n <= 0x7f
+}
+
+func getNextSpacePosition(src string, start int) int {
+	var k int
+	for k = start; k < len(src); k++ {
+		if src[k] != ' ' {
+			break
+		}
+	}
+	return k
+}
+
+func endOfTheItem(src string, i int) bool {
+	return i+1 < len(src) && src[i] == ',' && src[i+1] == ' '
 }

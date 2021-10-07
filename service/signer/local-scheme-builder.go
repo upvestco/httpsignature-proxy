@@ -60,7 +60,7 @@ func createLocalPrivateSchemeBuilder(keyData []byte, keyId string, keyPassword s
 		}
 
 		s := &schema.Sign{
-			KeyId: keyId,
+			KeyID: keyId,
 			Algo:  schema.AlgoECDSA,
 			Pk:    pk,
 		}

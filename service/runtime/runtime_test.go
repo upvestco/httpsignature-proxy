@@ -156,10 +156,10 @@ func (e *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	require.True(e.t, len(body) != 0)
 	defer r.Body.Close()
 	headers := r.Header
-	if val, ok := headers[material.Signature]; !ok || val == nil {
+	if val, ok := headers[material.SignatureHeader]; !ok || val == nil {
 		e.t.Error("request doesn't have signature header")
 	}
-	if val, ok := headers[material.SignatureInput]; !ok || val == nil {
+	if val, ok := headers[material.SignatureInputHeader]; !ok || val == nil {
 		e.t.Error("request doesn't have signature input header")
 	}
 	r.Body = ioutil.NopCloser(bytes.NewReader(body))

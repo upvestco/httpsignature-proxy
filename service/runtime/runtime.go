@@ -22,18 +22,21 @@ import (
 	"net/http"
 
 	"github.com/upvestco/httpsignature-proxy/config"
+	"github.com/upvestco/httpsignature-proxy/service/signer/logger"
 	"github.com/upvestco/httpsignature-proxy/service/signer/schema"
 )
 
 type Runtime struct {
 	cfg                  *config.Config
 	privateSchemeBuilder schema.SigningSchemeBuilder
+	logger               logger.Logger
 	server               *http.Server
 }
 
 func NewRuntime(cfg *config.Config, privateSchemeBuilder schema.SigningSchemeBuilder) Runtime {
 	return Runtime{
 		cfg:                  cfg,
+		logger:               logger.New(cfg.VerboseMode),
 		privateSchemeBuilder: privateSchemeBuilder,
 	}
 }
@@ -43,7 +46,7 @@ func (r *Runtime) Run() {
 }
 
 func (r *Runtime) installServer() {
-	handler := newHandler(r.cfg, r.privateSchemeBuilder)
+	handler := newHandler(r.cfg, r.privateSchemeBuilder, r.logger)
 	r.server = &http.Server{
 		Addr:    fmt.Sprintf("localhost:%d", r.cfg.Port),
 		Handler: handler}

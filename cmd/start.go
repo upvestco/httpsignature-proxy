@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/upvestco/httpsignature-proxy/config"
 	"github.com/upvestco/httpsignature-proxy/service/runtime"
 	"github.com/upvestco/httpsignature-proxy/service/signer"
@@ -33,6 +34,7 @@ const (
 	keyIDFlag              = "key-id"
 	serverBaseUrlFlag      = "server-base-url"
 	portFlag               = "port"
+	verboseModeFlag        = "verbose-mode"
 )
 
 var (
@@ -41,6 +43,7 @@ var (
 	serverBaseUrl      string
 	keyID              string
 	port               int
+	verboseMode        bool
 )
 
 var startCmd = &cobra.Command{
@@ -72,6 +75,8 @@ func init() {
 	startCmd.Flags().StringVarP(&keyID, keyIDFlag, "i", "", "id of the private key")
 	_ = startCmd.MarkFlagRequired(keyIDFlag)
 
+	startCmd.Flags().BoolVarP(&verboseMode, verboseModeFlag, "v", false, "enable verbose mode")
+
 	startCmd.Flags().IntVarP(&port, portFlag, "p", 3000, "port to start server")
 }
 
@@ -90,6 +95,7 @@ func startProxy() {
 		Password:           privateKeyPassword,
 		DefaultTimeout:     30 * time.Second,
 		KeyID:              keyID,
+		VerboseMode:        verboseMode,
 	}
 
 	lsBuilder, err := signer.NewLocalPrivateSchemeBuilder(cfg)

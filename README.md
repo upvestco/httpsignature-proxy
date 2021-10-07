@@ -49,6 +49,7 @@ Flags:
   -s, --server-base-url string        server base URL to pipe the requests to
   -i, --key-id string                 key id for specified private key
   -p, --port int                      port to start server
+  -v  --verbose-mode bool             enables verbose mode for proxy
 
 Global Flags:
       --config string   config file (default is $HOME/.httpsignature-proxy.yaml)

@@ -14,18 +14,33 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package config
+package logger
 
 import (
-	"time"
+	"fmt"
 )
 
-type Config struct {
-	Port               int
-	BaseUrl            string
-	PrivateKeyFileName string
-	Password           string
-	DefaultTimeout     time.Duration
-	KeyID              string
-	VerboseMode        bool
+type Logger interface {
+	Log(message string)
+	LogF(format string, a ...interface{})
+}
+
+func New(verboseMode bool) *ConsoleLogger {
+	return &ConsoleLogger{verboseMode: verboseMode}
+}
+
+type ConsoleLogger struct {
+	verboseMode bool
+}
+
+func (l *ConsoleLogger) LogF(format string, a ...interface{}) {
+	if l.verboseMode {
+		fmt.Printf(format, a...)
+	}
+}
+
+func (l *ConsoleLogger) Log(message string) {
+	if l.verboseMode {
+		fmt.Print(message)
+	}
 }

@@ -3,3 +3,4 @@ private-key-password: "123456"
 server-base-url: "http://httpbin.org"
 key-id: "your key id"
 port: 3000
+verbose-mode: true

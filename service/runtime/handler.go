@@ -26,6 +26,8 @@ import (
 	"strings"
 
 	"github.com/upvestco/httpsignature-proxy/config"
+	"github.com/upvestco/httpsignature-proxy/service/signer"
+	"github.com/upvestco/httpsignature-proxy/service/signer/logger"
 	"github.com/upvestco/httpsignature-proxy/service/signer/material"
 	"github.com/upvestco/httpsignature-proxy/service/signer/request"
 	"github.com/upvestco/httpsignature-proxy/service/signer/schema"
@@ -44,22 +46,24 @@ var (
 type Handler struct {
 	cfg           *config.Config
 	requestSigner request.Signer
-	httpClient    *http.Client
+	ssBuilder     schema.SigningSchemeBuilder
+	log           logger.Logger
 }
 
-func newHandler(cfg *config.Config, ssBuilder schema.SigningSchemeBuilder) *Handler {
+func newHandler(cfg *config.Config, ssBuilder schema.SigningSchemeBuilder, log logger.Logger) *Handler {
 	return &Handler{
 		cfg:           cfg,
-		requestSigner: request.New(ssBuilder),
-		httpClient:    &http.Client{},
+		log:           log,
+		requestSigner: request.New(log),
+		ssBuilder:     ssBuilder,
 	}
 }
 
 func (h *Handler) writeResponse(rw http.ResponseWriter, code int, headers map[string][]string, resp []byte) {
 	excludedHeaders := map[string]struct{}{
-		material.Signature:      {},
-		material.SignatureInput: {},
-		"Host":                  {},
+		material.SignatureHeader:      {},
+		material.SignatureInputHeader: {},
+		"Host":                        {},
 	}
 
 	for name, values := range headers {
@@ -104,6 +108,13 @@ func (h *Handler) copyHeaders(in *http.Request, out *http.Request) {
 	}
 }
 
+func (h *Handler) addRequiredHeaders(req *http.Request) {
+	if res := req.Header.Get(acceptHeader); res == "" {
+		req.Header.Add(acceptHeader, `*/*`)
+		fmt.Printf(" - Header '%s' added with value '%s'\n", acceptHeader, `*/*`)
+	}
+}
+
 func (h *Handler) excludeHeader(headerName string) bool {
 	cHeaderName := http.CanonicalHeaderKey(headerName)
 	for _, excludedHeader := range excludedHeaders {
@@ -115,10 +126,13 @@ func (h *Handler) excludeHeader(headerName string) bool {
 }
 
 func (h *Handler) ServeHTTP(rw http.ResponseWriter, inReq *http.Request) {
+	h.log.Log("\nSend request:\n")
 	ctx, cancel := context.WithTimeout(inReq.Context(), h.cfg.DefaultTimeout)
 	defer cancel()
 
 	url := fmt.Sprintf("%s%s", h.cfg.BaseUrl, inReq.URL.Path)
+	h.log.LogF(" - To url '%s'\n", url)
+
 	body, err := ioutil.ReadAll(inReq.Body)
 	if err != nil {
 		h.writeError(rw, http.StatusInternalServerError, err)
@@ -133,12 +147,13 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, inReq *http.Request) {
 
 	h.copyHeaders(inReq, outReq)
 
-	if err = h.requestSigner.Sign(outReq); err != nil {
-		h.writeError(rw, http.StatusInternalServerError, err)
-		return
-	}
+	h.addRequiredHeaders(outReq)
 
-	resp, err := h.httpClient.Do(outReq)
+	sign := h.ssBuilder.GetDefaultPrivateKey()
+
+	httpClient := signer.NewHTTPClient(h.requestSigner, sign)
+
+	resp, err := httpClient.Do(outReq)
 	if err != nil {
 		h.writeError(rw, http.StatusInternalServerError, err)
 		return
@@ -150,5 +165,13 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, inReq *http.Request) {
 		h.writeError(rw, http.StatusInternalServerError, err)
 		return
 	}
+
+	h.log.Log("Response:\n")
+	h.log.LogF(" - Status '%d'\n", resp.StatusCode)
+	h.log.LogF(" - Headers:\n")
+	for key := range resp.Header {
+		h.log.LogF("    %s:%s\n", key, resp.Header[key])
+	}
+
 	h.writeResponse(rw, resp.StatusCode, resp.Header, data)
 }
