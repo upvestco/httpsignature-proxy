@@ -5,29 +5,29 @@
 class HttpsignatureProxy < Formula
   desc "Localhost HTTP Signatures proxy."
   homepage "https://github.com/upvestco/httpsignature-proxy"
-  version "1.1.3"
+  version "1.2.0"
   license "Apache 2.0"
   bottle :unneeded
 
   on_macos do
-    if Hardware::CPU.intel?
-      url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.1.3/httpsignature-proxy_v1.1.3_macOS_64-bit.tar.gz"
-      sha256 "221e26a678d40fe0b1f68cb43aa37ee1356c4b18fd6b987a13ec0201965e8aed"
-    end
     if Hardware::CPU.arm?
-      url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.1.3/httpsignature-proxy_v1.1.3_macOS_arm64.tar.gz"
-      sha256 "effe9ecada237b07f72df365e333673efee12f8eb0779265b29499d17f008298"
+      url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.2.0/httpsignature-proxy_v1.2.0_macOS_arm64.tar.gz"
+      sha256 "d1285773db091bd6ef276d1fbc991a44b519bc47a381feb2d44340a65acd0919"
+    end
+    if Hardware::CPU.intel?
+      url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.2.0/httpsignature-proxy_v1.2.0_macOS_64-bit.tar.gz"
+      sha256 "02224699fd5ec465c121e30a10463a9670d7ca6f756e37feefebb7f89435e64f"
     end
   end
 
   on_linux do
-    if Hardware::CPU.intel?
-      url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.1.3/httpsignature-proxy_v1.1.3_Linux_64-bit.tar.gz"
-      sha256 "03585673981a0cb92c28727d3875062e412fe8024846644d279e4c33413abd02"
-    end
     if Hardware::CPU.arm? && Hardware::CPU.is_64_bit?
-      url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.1.3/httpsignature-proxy_v1.1.3_Linux_arm64.tar.gz"
-      sha256 "6da96e7ee597a6bb0495f257f75695f5a77aaacf9d5c6354b34d0dff087690ff"
+      url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.2.0/httpsignature-proxy_v1.2.0_Linux_arm64.tar.gz"
+      sha256 "ddb3439629736b9b414fc9d0e1a69abd8fc98ebd9c80327dac603a15fea0cdd0"
+    end
+    if Hardware::CPU.intel?
+      url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.2.0/httpsignature-proxy_v1.2.0_Linux_64-bit.tar.gz"
+      sha256 "9f4532f8ddca56c13aca40c3edf48d3f24b41d6967a2ebe756ebe646f6b229c2"
     end
   end
 
