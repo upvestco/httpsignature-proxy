@@ -23,7 +23,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
+	"path"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/upvestco/httpsignature-proxy/config"
 	"github.com/upvestco/httpsignature-proxy/service/signer"
@@ -130,8 +134,15 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, inReq *http.Request) {
 	ctx, cancel := context.WithTimeout(inReq.Context(), h.cfg.DefaultTimeout)
 	defer cancel()
 
-	url := fmt.Sprintf("%s%s", h.cfg.BaseUrl, inReq.URL.Path)
-	h.log.LogF(" - To url '%s'\n", url)
+	URL, err := url.Parse(fmt.Sprintf("%s/%s", h.cfg.BaseUrl, inReq.URL.Path))
+	if err != nil {
+		err := errors.New("wrong base url format")
+		h.writeError(rw, http.StatusInternalServerError, err)
+		return
+	}
+	normaliseUrl(URL)
+
+	h.log.LogF(" - To url '%s'\n", URL.String())
 
 	body, err := ioutil.ReadAll(inReq.Body)
 	if err != nil {
@@ -139,7 +150,7 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, inReq *http.Request) {
 		return
 	}
 
-	outReq, err := http.NewRequestWithContext(ctx, inReq.Method, url, bytes.NewBuffer(body))
+	outReq, err := http.NewRequestWithContext(ctx, inReq.Method, URL.String(), bytes.NewBuffer(body))
 	if err != nil {
 		h.writeError(rw, http.StatusInternalServerError, err)
 		return
@@ -174,4 +185,17 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, inReq *http.Request) {
 	}
 
 	h.writeResponse(rw, resp.StatusCode, resp.Header, data)
+}
+
+func normaliseUrl(u *url.URL) {
+	hasSlash := strings.HasSuffix(u.Path, "/")
+
+	// clean up path, removing duplicate `/`
+	u.Path = path.Clean(u.Path)
+	u.RawPath = path.Clean(u.RawPath)
+
+	if hasSlash && !strings.HasSuffix(u.Path, "/") {
+		u.Path += "/"
+		u.RawPath += "/"
+	}
 }
