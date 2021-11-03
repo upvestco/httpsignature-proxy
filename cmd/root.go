@@ -27,6 +27,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+
+	"github.com/upvestco/httpsignature-proxy/config"
 )
 
 const (
@@ -34,7 +36,6 @@ const (
 )
 
 var cfgFile string
-
 var errConfigInitFail = errors.New("failed to initialize config")
 
 // RootCmd represents the base command when called without any subcommands
@@ -78,9 +79,36 @@ func initConfig(cmd *cobra.Command) {
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
+	} else {
+		fmt.Fprintf(os.Stderr, "Errors in reading config file: %v", err)
 	}
-
 	bindFlags(cmd)
+
+	format := "key-configs.config-%d"
+	for i := 1; ; i++ {
+		key := fmt.Sprintf(format, i)
+		v := viper.Sub(key)
+		if v == nil {
+			break
+		}
+		keyConfig, err := mapToConfig(v.AllSettings())
+		if err != nil {
+			log.Fatalf("failed to initialize key config: %s", key)
+		}
+		keyConfigs = append(keyConfigs, keyConfig)
+	}
+}
+
+func mapToConfig(m map[string]interface{}) (config.KeyConfig, error) {
+	return config.KeyConfig{
+		ClientID: m["client-id"].(string),
+		BaseConfig: config.BaseConfig{
+			PrivateKeyFileName: m["private-key"].(string),
+			Password:           m["private-key-password"].(string),
+			BaseUrl:            m["server-base-url"].(string),
+			KeyID:              m["key-id"].(string),
+		},
+	}, nil
 }
 
 func bindFlags(cmd *cobra.Command) {
@@ -91,7 +119,6 @@ func bindFlags(cmd *cobra.Command) {
 				log.Fatal(errConfigInitFail)
 			}
 		}
-
 		// Apply the viper config value to the flag when the flag is not set and viper has a value
 		if !f.Changed && viper.IsSet(f.Name) {
 			val := viper.Get(f.Name)

@@ -27,17 +27,22 @@ import (
 )
 
 type Runtime struct {
-	cfg                  *config.Config
-	privateSchemeBuilder schema.SigningSchemeBuilder
-	logger               logger.Logger
-	server               *http.Server
+	cfg           *config.Config
+	signerConfigs map[string]SignerConfig
+	logger        logger.Logger
+	server        *http.Server
 }
 
-func NewRuntime(cfg *config.Config, privateSchemeBuilder schema.SigningSchemeBuilder) Runtime {
+type SignerConfig struct {
+	SignBuilder schema.SigningSchemeBuilder
+	KeyConfig   config.BaseConfig
+}
+
+func NewRuntime(cfg *config.Config, signerConfigs map[string]SignerConfig) Runtime {
 	return Runtime{
-		cfg:                  cfg,
-		logger:               logger.New(cfg.VerboseMode),
-		privateSchemeBuilder: privateSchemeBuilder,
+		cfg:           cfg,
+		logger:        logger.New(cfg.VerboseMode),
+		signerConfigs: signerConfigs,
 	}
 }
 
@@ -46,7 +51,7 @@ func (r *Runtime) Run() {
 }
 
 func (r *Runtime) installServer() {
-	handler := newHandler(r.cfg, r.privateSchemeBuilder, r.logger)
+	handler := newHandler(r.cfg, r.signerConfigs, r.logger)
 	r.server = &http.Server{
 		Addr:    fmt.Sprintf("localhost:%d", r.cfg.Port),
 		Handler: handler}

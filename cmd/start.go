@@ -32,16 +32,19 @@ const (
 	privateKeyFileNameFlag = "private-key"
 	privateKeyPasswordFlag = "private-key-password"
 	keyIDFlag              = "key-id"
+	clientIDFlag           = "client-id"
 	serverBaseUrlFlag      = "server-base-url"
 	portFlag               = "port"
 	verboseModeFlag        = "verbose-mode"
 )
 
 var (
+	keyConfigs         []config.KeyConfig
 	privateKeyFileName string
 	privateKeyPassword string
 	serverBaseUrl      string
 	keyID              string
+	clientID           string
 	port               int
 	verboseMode        bool
 )
@@ -63,17 +66,12 @@ var startCmd = &cobra.Command{
 func init() {
 	// Register the start command
 	RootCmd.AddCommand(startCmd)
+
 	startCmd.Flags().StringVarP(&privateKeyFileName, privateKeyFileNameFlag, "f", "", "filename of the private key file")
-	_ = startCmd.MarkFlagRequired(privateKeyFileNameFlag)
-
 	startCmd.Flags().StringVarP(&privateKeyPassword, privateKeyPasswordFlag, "P", "", "password of the private key")
-	_ = startCmd.MarkFlagRequired(privateKeyPasswordFlag)
-
 	startCmd.Flags().StringVarP(&serverBaseUrl, serverBaseUrlFlag, "s", "", "server base URL to pipe the requests to")
-	_ = startCmd.MarkFlagRequired(serverBaseUrlFlag)
-
 	startCmd.Flags().StringVarP(&keyID, keyIDFlag, "i", "", "id of the private key")
-	_ = startCmd.MarkFlagRequired(keyIDFlag)
+	startCmd.Flags().StringVarP(&clientID, clientIDFlag, "c", "", "client id for the private key")
 
 	startCmd.Flags().BoolVarP(&verboseMode, verboseModeFlag, "v", false, "enable verbose mode")
 
@@ -84,25 +82,70 @@ func init() {
 func startProxy() {
 	fmt.Printf("Starting to listen on port %d\n", port)
 
-	fmt.Printf("- Using private key file %s for HTTP Signatures\n", privateKeyFileName)
-	fmt.Printf("- Using keyID %s for HTTP Signatures\n", keyID)
+	flagConfig := config.KeyConfig{
+		ClientID: clientID,
+		BaseConfig: config.BaseConfig{
+			BaseUrl:            serverBaseUrl,
+			KeyID:              keyID,
+			PrivateKeyFileName: privateKeyFileName,
+			Password:           privateKeyPassword,
+		},
+	}
 
-	fmt.Printf("- Piping all requests to %s\n", serverBaseUrl)
+	if !flagConfig.IsEmpty() {
+		if err := flagConfig.BaseConfig.Validate(); err != nil {
+			fatalConfigError(flagConfig, err)
+		}
+		if flagConfig.ClientID == "" {
+			flagConfig.ClientID = config.DefaultClientKey
+		}
+		keyConfigs = append(keyConfigs, flagConfig)
+	}
+
 	cfg := &config.Config{
-		Port:               port,
-		BaseUrl:            serverBaseUrl,
-		PrivateKeyFileName: privateKeyFileName,
-		Password:           privateKeyPassword,
-		DefaultTimeout:     30 * time.Second,
-		KeyID:              keyID,
-		VerboseMode:        verboseMode,
+		Port:           port,
+		DefaultTimeout: 30 * time.Second,
+		VerboseMode:    verboseMode,
+		KeyConfigs:     keyConfigs,
 	}
 
-	lsBuilder, err := signer.NewLocalPrivateSchemeBuilder(cfg)
-	if err != nil {
-		log.Fatal(err)
+	signerConfigs := make(map[string]runtime.SignerConfig)
+	for i := range cfg.KeyConfigs {
+		if err := cfg.KeyConfigs[i].Validate(); err != nil {
+			fatalConfigError(cfg.KeyConfigs[i], err)
+		}
+		builder, err := signer.NewLocalPrivateSchemeBuilder(&cfg.KeyConfigs[i].BaseConfig)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		clientID := cfg.KeyConfigs[i].ClientID
+		if _, ok := signerConfigs[clientID]; ok {
+			fmt.Printf("ClientID duplicated in configuration\n")
+			log.Fatalf("Stopped due missconfiguration")
+		}
+
+		signerConfigs[clientID] = runtime.SignerConfig{
+			SignBuilder: builder,
+			KeyConfig:   cfg.KeyConfigs[i].BaseConfig,
+		}
 	}
 
-	r := runtime.NewRuntime(cfg, lsBuilder)
+	fmt.Printf("Private keys initialised: \n")
+	for i := range keyConfigs {
+		fmt.Printf("  Key %d for clientID %s:\n", i+1, keyConfigs[i].ClientID)
+		fmt.Printf("  - Using private key file %s for HTTP Signatures\n", keyConfigs[i].PrivateKeyFileName)
+		fmt.Printf("  - Using keyID %s for HTTP Signatures\n", keyConfigs[i].KeyID)
+		fmt.Printf("  - Piping all requests to %s\n", keyConfigs[i].BaseUrl)
+	}
+
+	r := runtime.NewRuntime(cfg, signerConfigs)
 	r.Run()
+}
+
+func fatalConfigError(keyConfig config.KeyConfig, err error) {
+	fmt.Printf("Invalid confiruration:\n - keyID: %s;\n - clientID: %s;\n - privateKey: %s;\n - baseUrl: %s\n",
+		keyConfig.KeyID, keyConfig.ClientID, keyConfig.PrivateKeyFileName, keyConfig.BaseUrl)
+	fmt.Printf("Error: %s\n", err.Error())
+	log.Fatalf("invalid configuration: %s\n", err.Error())
 }

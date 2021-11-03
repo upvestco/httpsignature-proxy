@@ -29,7 +29,7 @@ import (
 	"github.com/upvestco/httpsignature-proxy/service/signer/schema"
 )
 
-func NewLocalPrivateSchemeBuilder(cfg *config.Config) (*LocalPrivateSchemeBuilder, error) {
+func NewLocalPrivateSchemeBuilder(cfg *config.BaseConfig) (*LocalPrivateSchemeBuilder, error) {
 	body, err := ioutil.ReadFile(cfg.PrivateKeyFileName)
 	if err != nil {
 		return nil, err
@@ -37,7 +37,7 @@ func NewLocalPrivateSchemeBuilder(cfg *config.Config) (*LocalPrivateSchemeBuilde
 	return createLocalPrivateSchemeBuilder(body, cfg.KeyID, cfg.Password)
 }
 
-func NewLocalPrivateSchemeBuilderFromSeed(keyData string, cfg *config.Config) (*LocalPrivateSchemeBuilder, error) {
+func NewLocalPrivateSchemeBuilderFromSeed(keyData string, cfg *config.KeyConfig) (*LocalPrivateSchemeBuilder, error) {
 	return createLocalPrivateSchemeBuilder([]byte(keyData), cfg.KeyID, cfg.Password)
 }
 
