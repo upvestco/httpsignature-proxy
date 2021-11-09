@@ -17,15 +17,70 @@ limitations under the License.
 package config
 
 import (
+	"fmt"
+	"os"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/pkg/errors"
+)
+
+const (
+	DefaultClientKey = "default"
 )
 
 type Config struct {
-	Port               int
+	BaseConfig     *BaseConfig
+	KeyConfigs     []KeyConfig
+	DefaultTimeout time.Duration
+	VerboseMode    bool
+	Port           int
+}
+
+type BaseConfig struct {
 	BaseUrl            string
+	KeyID              string
 	PrivateKeyFileName string
 	Password           string
-	DefaultTimeout     time.Duration
-	KeyID              string
-	VerboseMode        bool
+}
+
+type KeyConfig struct {
+	ClientID string
+	BaseConfig
+}
+
+func (c *BaseConfig) IsEmpty() bool {
+	return c.BaseUrl == "" &&
+		c.KeyID == "" && c.Password == "" && c.PrivateKeyFileName == ""
+}
+
+func (c *BaseConfig) Validate() error {
+	if c.KeyID == "" {
+		return errors.New("keyID is empty")
+	}
+	if _, err := os.Stat(c.PrivateKeyFileName); errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("private key file not exists: %s", c.PrivateKeyFileName)
+	}
+	if c.BaseUrl == "" {
+		return errors.New("base url is empty")
+	}
+	return nil
+}
+
+func (c *KeyConfig) IsEmpty() bool {
+	return c.BaseConfig.IsEmpty() && c.ClientID == ""
+}
+
+func (c *KeyConfig) Validate() error {
+	if err := c.BaseConfig.Validate(); err != nil {
+		return err
+	}
+	if c.ClientID == DefaultClientKey {
+		return nil
+	}
+	_, err := uuid.Parse(c.ClientID)
+	if err != nil {
+		return errors.New("clientID is not a valid uuid")
+	}
+	return nil
 }

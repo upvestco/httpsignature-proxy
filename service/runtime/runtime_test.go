@@ -26,6 +26,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -61,16 +62,25 @@ func TestRuntime_Run(t *testing.T) {
 type TestRuntimeSuite struct {
 	suite.Suite
 	testServ *testService
+	clientID uuid.UUID
 }
 
 func (s *TestRuntimeSuite) SetupSuite() {
+	s.clientID = uuid.New()
 	cfg := &config.Config{
-		Port:               runtimePort,
-		BaseUrl:            testBaseUrl,
-		PrivateKeyFileName: "",
-		Password:           testPass,
-		DefaultTimeout:     30 * time.Second,
-		KeyID:              testKeyID,
+		Port:           runtimePort,
+		DefaultTimeout: 30 * time.Second,
+		KeyConfigs: []config.KeyConfig{
+			{
+				BaseConfig: config.BaseConfig{
+					BaseUrl:            testBaseUrl,
+					PrivateKeyFileName: "",
+					Password:           testPass,
+					KeyID:              testKeyID,
+				},
+				ClientID: s.clientID.String(),
+			},
+		},
 	}
 	s.setupTestService()
 	s.setupRuntime(cfg)
@@ -82,9 +92,16 @@ func (s *TestRuntimeSuite) setupTestService() {
 }
 
 func (s *TestRuntimeSuite) setupRuntime(cfg *config.Config) {
-	privateSchemeBuilder, err := signer.NewLocalPrivateSchemeBuilderFromSeed(privateTestKey, cfg)
-	assert.NoError(s.T(), err)
-	r := NewRuntime(cfg, privateSchemeBuilder)
+	signerConfigs := make(map[string]SignerConfig)
+	for i := range cfg.KeyConfigs {
+		privateSchemeBuilder, err := signer.NewLocalPrivateSchemeBuilderFromSeed(privateTestKey, &cfg.KeyConfigs[i])
+		require.NoError(s.T(), err)
+		signerConfigs[cfg.KeyConfigs[i].ClientID] = SignerConfig{
+			SignBuilder: privateSchemeBuilder,
+			KeyConfig:   cfg.KeyConfigs[i].BaseConfig,
+		}
+	}
+	r := NewRuntime(cfg, signerConfigs)
 	go r.Run()
 }
 
@@ -95,6 +112,7 @@ func (s *TestRuntimeSuite) Test_RuntimeRun() {
 
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, url, body)
 	require.NoError(s.T(), err)
+	req.Header.Set("upvest-client-id", s.clientID.String())
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
