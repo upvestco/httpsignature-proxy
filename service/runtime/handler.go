@@ -47,7 +47,7 @@ var (
 	upvestClientID = "upvest-client-id"
 	tokenEndpoint  = "/auth/token"
 
-	excludedHeaders = []string{hostHeader, acceptEncodingHeader, connectionHeader, acceptHeader, userAgentHeader}
+	excludedHeaders = []string{hostHeader, acceptEncodingHeader, connectionHeader, userAgentHeader}
 )
 
 type Handler struct {
