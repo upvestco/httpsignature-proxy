@@ -199,8 +199,16 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, inReq *http.Request) {
 		return
 	}
 
-	toUrl := fmt.Sprintf("%s%s", signerCfg.KeyConfig.BaseUrl, inReq.URL.Path)
-	h.log.LogF(" - To url '%s'\n", toUrl)
+	// toUrl := fmt.Sprintf("%s%s", signerCfg.KeyConfig.BaseUrl, inReq.URL.Path)
+	toUrl, err := url.Parse(signerCfg.KeyConfig.BaseUrl)
+	if err != nil {
+		h.log.Log("Wrong base URL")
+		h.writeError(rw, http.StatusInternalServerError, err)
+		return
+	}
+	toUrl.Path = inReq.URL.Path
+	toUrl.RawQuery = inReq.URL.RawQuery
+	h.log.LogF(" - To url '%s'\n", toUrl.String())
 
 	body, err := ioutil.ReadAll(inReq.Body)
 	if err != nil {
@@ -208,7 +216,7 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, inReq *http.Request) {
 		return
 	}
 
-	outReq, err := http.NewRequestWithContext(ctx, inReq.Method, toUrl, bytes.NewBuffer(body))
+	outReq, err := http.NewRequestWithContext(ctx, inReq.Method, toUrl.String(), bytes.NewBuffer(body))
 	if err != nil {
 		h.writeError(rw, http.StatusInternalServerError, err)
 		return

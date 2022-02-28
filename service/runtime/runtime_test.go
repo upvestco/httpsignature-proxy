@@ -106,13 +106,14 @@ func (s *TestRuntimeSuite) setupRuntime(cfg *config.Config) {
 }
 
 func (s *TestRuntimeSuite) Test_RuntimeRun() {
-	url := fmt.Sprintf("http://localhost:%d/%s", runtimePort, "endpoint")
+	url := fmt.Sprintf("http://localhost:%d/%s", runtimePort, "endpoint?param=val")
 	pl := []byte("This is the body")
 	body := bytes.NewBuffer(pl)
 
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, url, body)
 	require.NoError(s.T(), err)
 	req.Header.Set("upvest-client-id", s.clientID.String())
+	require.True(s.T(), req.URL.Query().Has("param"))
 
 	client := &http.Client{}
 	resp, err := client.Do(req)

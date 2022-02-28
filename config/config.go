@@ -18,6 +18,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"time"
 
@@ -61,8 +62,8 @@ func (c *BaseConfig) Validate() error {
 	if _, err := os.Stat(c.PrivateKeyFileName); errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("private key file not exists: %s", c.PrivateKeyFileName)
 	}
-	if c.BaseUrl == "" {
-		return errors.New("base url is empty")
+	if _, err := url.Parse(c.BaseUrl); err != nil || c.BaseUrl == "" {
+		return errors.New("base url is empty or invalid")
 	}
 	return nil
 }
