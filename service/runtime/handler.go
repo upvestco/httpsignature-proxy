@@ -199,7 +199,6 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, inReq *http.Request) {
 		return
 	}
 
-	// toUrl := fmt.Sprintf("%s%s", signerCfg.KeyConfig.BaseUrl, inReq.URL.Path)
 	toUrl, err := url.Parse(signerCfg.KeyConfig.BaseUrl)
 	if err != nil {
 		h.log.Log("Wrong base URL")
