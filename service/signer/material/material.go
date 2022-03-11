@@ -41,6 +41,13 @@ var (
 	SignatureHeader      = textproto.CanonicalMIMEHeaderKey("Signature")
 	SignatureInputHeader = textproto.CanonicalMIMEHeaderKey("Signature-Input")
 	DigestHeader         = textproto.CanonicalMIMEHeaderKey("digest")
+
+	ignoreHeadersWithPrefix = []string{
+		"cf-",
+		"cdn-",
+		"cookie",
+		"x-",
+	}
 )
 
 type Material struct {
@@ -134,6 +141,11 @@ func (e *Material) AppendArray(k string, v []string) error {
 }
 
 func (e *Material) AppendValue(k, v string) {
+	for _, prefix := range ignoreHeadersWithPrefix {
+		if strings.HasPrefix(k, prefix) {
+			return
+		}
+	}
 	e.Data[k] = v
 	e.Names = append(e.Names, k)
 }
