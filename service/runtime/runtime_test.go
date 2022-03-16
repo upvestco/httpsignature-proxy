@@ -113,7 +113,8 @@ func (s *TestRuntimeSuite) Test_RuntimeRun() {
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, url, body)
 	require.NoError(s.T(), err)
 	req.Header.Set("upvest-client-id", s.clientID.String())
-	require.True(s.T(), req.URL.Query().Has("param"))
+	param := req.URL.Query().Get("param")
+	require.NotEmpty(s.T(), param)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
