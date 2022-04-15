@@ -7,7 +7,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/ory/x v0.0.291
+	github.com/ory/x v0.0.368
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/afero v1.8.1 // indirect
 	github.com/spf13/cobra v1.4.0
