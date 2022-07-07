@@ -1,0 +1,5 @@
+private-key: "./ec-encr-priv-key.pem"
+private-key-password: "gophercon"
+server-base-url: "https://sandbox.api.upvest.io"
+key-id: "gopher-key"
+port: 3000
