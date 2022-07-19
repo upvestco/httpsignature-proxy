@@ -24,6 +24,7 @@ import (
 	b64 "encoding/base64"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -64,6 +65,7 @@ func (e *Sign) SignRequest(m *material.Material, r *http.Request, log logger.Log
 func (e *Sign) sign(m *material.Material, headers http.Header, log logger.Logger) error {
 	const sigID = "sig1"
 	body, signatureParams, err := m.GetBody(e.KeyID)
+
 	if err != nil {
 		return errors.Wrap(err, "GetBody")
 	}
@@ -75,8 +77,18 @@ func (e *Sign) sign(m *material.Material, headers http.Header, log logger.Logger
 
 	headers.Set(material.SignatureInputHeader, fmt.Sprintf("%s=%s", sigID, signatureParams))
 	headers.Set(material.SignatureHeader, fmt.Sprintf("%s=:%s:", sigID, hash))
+
 	log.LogF(" - Header '%s' added with value '%s'\n", material.SignatureInputHeader, signatureParams)
 	log.LogF(" - Header '%s' added with value '%s'\n", material.SignatureHeader, hash)
+
+	log.Log(" - Headers list:\n")
+	for key, vals := range headers {
+		for _, val := range vals {
+			log.LogF("   - %s: '%v'\n", key, val)
+		}
+	}
+	log.LogF(" - Body for signing: \n'%s'\n", body)
+	log.LogF(" - Body with escaped \\n :\n'%s'\n", strings.ReplaceAll(string(body), "\n", "\\n"))
 
 	return nil
 }

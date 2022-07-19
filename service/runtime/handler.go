@@ -40,10 +40,10 @@ import (
 var (
 	hostHeader           = http.CanonicalHeaderKey("host")
 	acceptEncodingHeader = http.CanonicalHeaderKey("accept-encoding")
-	acceptHeader         = http.CanonicalHeaderKey("accept")
 	connectionHeader     = http.CanonicalHeaderKey("connection")
 	userAgentHeader      = http.CanonicalHeaderKey("user-agent")
 
+	acceptHeader   = http.CanonicalHeaderKey("accept")
 	upvestClientID = "upvest-client-id"
 	tokenEndpoint  = "/auth/token"
 
@@ -112,6 +112,10 @@ func (h *Handler) copyHeaders(in *http.Request, out *http.Request) {
 			continue
 		}
 		out.Header.Add(headerName, strings.Join(value, ","))
+	}
+	h.log.Log(" - Headers that will be excluded if presented:\n")
+	for _, excludedHeader := range excludedHeaders {
+		h.log.LogF("   - %s:\n", excludedHeader)
 	}
 }
 
@@ -242,6 +246,7 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, inReq *http.Request) {
 		return
 	}
 
+	h.log.Log("\n=====================\n")
 	h.log.Log("Response:\n")
 	h.log.LogF(" - Status '%d'\n", resp.StatusCode)
 	h.log.LogF(" - Headers:\n")
