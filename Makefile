@@ -9,7 +9,7 @@ LDFLAGS="-X github.com/upvestco/httpsignature-proxy/cmd.date=$(COMPILED) -X gith
 default: macos
 
 clean:
-	rm -rf httpsignature-*
+	rm -rf httpsignature-proxy
 
 macos: clean
 	GOOS=darwin $(BUILDTOOL) build -ldflags $(LDFLAGS)

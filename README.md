@@ -14,22 +14,8 @@ Sandbox.
 
 ## Installation
 
-You can download the binaries from
-the [Releases-page](https://github.com/upvestco/httpsignature-proxy/releases)
-
-OR
-
-You can install it from Homebrew:
-
 ```shell
-brew tap upvestco/httpsignature-proxy
-brew install httpsignature-proxy
-```
-
-## Building locally
-
-```shell
-git clone https://github.com/upvestco/httpsignature-proxy.git
+git clone https://github.com/upvestco/httpsignature-proxy-demo.git
 make
 ```
 
