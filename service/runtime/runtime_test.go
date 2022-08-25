@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"testing"
@@ -121,7 +121,7 @@ func (s *TestRuntimeSuite) Test_RuntimeRun() {
 	require.NoError(s.T(), err)
 	defer resp.Body.Close()
 	assert.Exactly(s.T(), http.StatusOK, resp.StatusCode)
-	respBody, err := ioutil.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), pl, respBody)
 }
@@ -157,7 +157,7 @@ func (s *testService) Start(t *testing.T) {
 
 func (s *testService) endpoint(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -171,7 +171,7 @@ type handler struct {
 }
 
 func (e *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	require.NoError(e.t, err)
 	require.True(e.t, len(body) != 0)
 	defer r.Body.Close()
@@ -182,6 +182,6 @@ func (e *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if val, ok := headers[material.SignatureInputHeader]; !ok || val == nil {
 		e.t.Error("request doesn't have signature input header")
 	}
-	r.Body = ioutil.NopCloser(bytes.NewReader(body))
+	r.Body = io.NopCloser(bytes.NewReader(body))
 	e.router.ServeHTTP(w, r)
 }
