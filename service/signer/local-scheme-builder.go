@@ -20,7 +20,7 @@ import (
 	"crypto/ecdsa"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
@@ -30,7 +30,7 @@ import (
 )
 
 func NewLocalPrivateSchemeBuilder(cfg *config.BaseConfig) (*LocalPrivateSchemeBuilder, error) {
-	body, err := ioutil.ReadFile(cfg.PrivateKeyFileName)
+	body, err := os.ReadFile(cfg.PrivateKeyFileName)
 	if err != nil {
 		return nil, err
 	}

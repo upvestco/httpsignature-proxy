@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -213,7 +212,7 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, inReq *http.Request) {
 	toUrl.RawQuery = inReq.URL.RawQuery
 	h.log.LogF(" - To url '%s'\n", toUrl.String())
 
-	body, err := ioutil.ReadAll(inReq.Body)
+	body, err := io.ReadAll(inReq.Body)
 	if err != nil {
 		h.writeError(rw, http.StatusInternalServerError, err)
 		return
@@ -240,7 +239,7 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, inReq *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		h.writeError(rw, http.StatusInternalServerError, err)
 		return
