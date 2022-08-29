@@ -54,12 +54,12 @@ type RoundTripper struct {
 func (r RoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	err := r.signer.Sign(req, r.signingKey)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to sign request")
+		return nil, errors.Wrap(err, "signing proxy: unable to sign request")
 	}
 
 	rsp, err := r.inner.RoundTrip(req)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to perform request")
+		return nil, errors.Wrap(err, "signing proxy: unable to perform request")
 	}
 
 	return rsp, nil
