@@ -230,11 +230,19 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, inReq *http.Request) {
 
 	sign := signerCfg.SignBuilder.GetDefaultPrivateKey()
 
-	httpClient := signer.NewHTTPClient(h.requestSigner, sign)
+	httpClient := signer.NewHTTPClient(h.requestSigner, sign, h.log)
 
 	resp, err := httpClient.Do(outReq)
 	if err != nil {
-		h.writeError(rw, http.StatusInternalServerError, err)
+		switch {
+		case errors.Is(err, context.DeadlineExceeded):
+			h.writeError(rw, http.StatusGatewayTimeout, err)
+		case errors.Is(err, signer.ErrSigning):
+			h.writeError(rw, http.StatusBadRequest, err)
+		default:
+			h.writeError(rw, http.StatusInternalServerError, err)
+		}
+
 		return
 	}
 	defer resp.Body.Close()

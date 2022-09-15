@@ -21,21 +21,24 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/upvestco/httpsignature-proxy/service/signer/logger"
 	"github.com/upvestco/httpsignature-proxy/service/signer/request"
 )
 
 var _ http.RoundTripper = (*RoundTripper)(nil)
 
+var ErrSigning = errors.New("signing proxy: unable to sign request")
+
 // NewHTTPClient will create a new http.Client and add the signing transport to it.
-func NewHTTPClient(signer request.Signer, signingKey request.RequestSigner) *http.Client {
+func NewHTTPClient(signer request.Signer, signingKey request.RequestSigner, log logger.Logger) *http.Client {
 	return &http.Client{
-		Transport: NewTransport(http.DefaultTransport, signer, signingKey),
+		Transport: NewTransport(http.DefaultTransport, signer, signingKey, log),
 	}
 }
 
 // NewTransport will create a new http.RoundTripper that can be used in http.Client to sign requests transparently.
 // Underlying http.RoundTripper cannot be nil, if unsure, you can use http.DefaultTransport.
-func NewTransport(inner http.RoundTripper, signer request.Signer, signingKey request.RequestSigner) *RoundTripper {
+func NewTransport(inner http.RoundTripper, signer request.Signer, signingKey request.RequestSigner, log logger.Logger) *RoundTripper {
 	return &RoundTripper{
 		inner:      inner,
 		signer:     signer,
@@ -48,13 +51,15 @@ type RoundTripper struct {
 	inner      http.RoundTripper
 	signer     request.Signer
 	signingKey request.RequestSigner
+	log        logger.Logger
 }
 
 // RoundTrip does the actual signing and sending.
 func (r RoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	err := r.signer.Sign(req, r.signingKey)
 	if err != nil {
-		return nil, errors.Wrap(err, "signing proxy: unable to sign request")
+		r.log.LogF("signing error: %v", err)
+		return nil, ErrSigning
 	}
 
 	rsp, err := r.inner.RoundTrip(req)
