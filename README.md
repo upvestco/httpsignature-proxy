@@ -110,7 +110,9 @@ openssl pkey -outform DER -pubout -in ed25519.pem | tail -c +13 | \
 openssl base64 > ed25519.pub
 ```
 
-**Please note that the httpsignature-proxy does not support es25519 key type.**
+**Please note that the httpsignature-proxy does not support es25519 key type.
+Despite the fact that httpsignature-proxy supports not protected by password
+private keys, we strongly recommend to use only keys with password.**
 
 ## Configuration
 

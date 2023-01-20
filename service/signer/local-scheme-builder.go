@@ -49,9 +49,18 @@ func createLocalPrivateSchemeBuilder(keyData []byte, keyId string, keyPassword s
 
 	switch block.Type {
 	case schema.EcKeyType:
-		rawPk, err := ssh.ParseRawPrivateKeyWithPassphrase(keyData, []byte(keyPassword))
-		if err != nil {
-			return nil, err
+		var rawPk interface{}
+		var err error
+		if keyPassword != "" {
+			rawPk, err = ssh.ParseRawPrivateKeyWithPassphrase(keyData, []byte(keyPassword))
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			rawPk, err = ssh.ParseRawPrivateKey(keyData)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		pk, ok := rawPk.(*ecdsa.PrivateKey)
