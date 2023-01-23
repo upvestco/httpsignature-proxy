@@ -7,14 +7,14 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/ory/x v0.0.455
+	github.com/ory/x v0.0.533
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/afero v1.9.3 // indirect
-	github.com/spf13/cobra v1.5.0
+	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.15.0
 	github.com/stretchr/testify v1.8.1
-	golang.org/x/crypto v0.0.0-20220824171710-5757bc0c5503
+	golang.org/x/crypto v0.1.0
 	golang.org/x/sys v0.3.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
