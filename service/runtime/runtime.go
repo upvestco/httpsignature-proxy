@@ -53,7 +53,7 @@ func (r *Runtime) Run() {
 func (r *Runtime) installServer() {
 	handler := newHandler(r.cfg, r.signerConfigs, r.logger)
 	r.server = &http.Server{
-		Addr:    fmt.Sprintf("localhost:%d", r.cfg.Port),
+		Addr:    fmt.Sprintf(":%d", r.cfg.Port),
 		Handler: handler}
 	log.Fatal(r.server.ListenAndServe())
 }
