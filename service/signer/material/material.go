@@ -18,7 +18,7 @@ package material
 
 import (
 	"bytes"
-	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/base64"
 	"fmt"
 	"net/http"
@@ -34,13 +34,15 @@ const (
 	ietfMethod          = "@method"
 	ietfPath            = "@path"
 	ietfQuery           = "@query"
+	ietfContentDigest   = "content-digest"
 	ietfSignatureParams = "@signature-params"
 )
 
 var (
 	SignatureHeader      = textproto.CanonicalMIMEHeaderKey("Signature")
 	SignatureInputHeader = textproto.CanonicalMIMEHeaderKey("Signature-Input")
-	DigestHeader         = textproto.CanonicalMIMEHeaderKey("digest")
+	SigningVersionHeader = textproto.CanonicalMIMEHeaderKey("Upvest-Signature-Version")
+	ContentDigestHeader  = textproto.CanonicalMIMEHeaderKey("Content-Digest")
 
 	ignoreHeadersWithPrefix = []string{
 		"cf-",
@@ -101,7 +103,7 @@ func MaterialFromRequest(req *http.Request) (*Material, error) {
 		return nil, errors.Wrap(err, "getRequestBody")
 	}
 	if len(body) > 0 {
-		e.addDigest(body, req.Header)
+		e.addContentDigest(body, req.Header)
 	}
 	if len(req.URL.RawQuery) > 0 {
 		e.AppendValue(ietfQuery, "?"+req.URL.RawQuery)
@@ -110,11 +112,11 @@ func MaterialFromRequest(req *http.Request) (*Material, error) {
 	return e, nil
 }
 
-func (e *Material) addDigest(body []byte, headers http.Header) {
-	data := sha256.Sum256(body)
-	hash := "SHA-256=" + base64.StdEncoding.EncodeToString(data[:])
-	headers.Set(DigestHeader, hash)
-	e.AppendValue("digest", hash)
+func (e *Material) addContentDigest(body []byte, headers http.Header) {
+	data := sha512.Sum512(body)
+	hash := "sha-512=:" + base64.StdEncoding.EncodeToString(data[:]) + ":"
+	headers.Set(ContentDigestHeader, hash)
+	e.AppendValue(ietfContentDigest, hash)
 }
 
 func (e *Material) AppendHeaders(headers http.Header) error {
