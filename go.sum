@@ -145,8 +145,8 @@ github.com/mitchellh/go-homedir v1.1.0 h1:lukF9ziXFxDFPkA1vsr5zpc1XuPDn/wFntq5mG
 github.com/mitchellh/go-homedir v1.1.0/go.mod h1:SfyaCUpYCn1Vlf4IUYiD9fPX4A5wJrkLzIz1N1q0pr0=
 github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyuac5Z2hdY=
 github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
-github.com/ory/x v0.0.572 h1:++nJ8UwisM7KVhejexdDt2jA007eHb+0pB+xagbDKwI=
-github.com/ory/x v0.0.572/go.mod h1:UV+rcVGLIMVSGzBJD9Sf0sd4k3EehTd3pNwmTxWUT1g=
+github.com/ory/x v0.0.587 h1:d+9JnTYn11wm7MZQR0Sl41qdtDL7H2cldXElqW+U3CU=
+github.com/ory/x v0.0.587/go.mod h1:7yXR0Z6Ssmz5z/6lIye3eDTc6KjdHKkGNku/B/ifg4g=
 github.com/pelletier/go-toml/v2 v2.0.8 h1:0ctb6s9mE31h0/lhu+J6OPmVeDxJn+kYnJc2jZR9tGQ=
 github.com/pelletier/go-toml/v2 v2.0.8/go.mod h1:vuYfssBdrU2XDZ9bYydBu6t+6a6PYNcZljzZR9VXg+4=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
