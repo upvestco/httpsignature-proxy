@@ -1,6 +1,3 @@
-before:
-  hooks:
-    - go mod download
 builds:
   - id: default
     goos:
@@ -53,7 +50,7 @@ brews:
 
     # GitHub/GitLab repository to push the formula to
     # Gitea is not supported yet, but the support coming
-    tap:
+    repository:
       owner: upvestco
       name: httpsignature-proxy
       # Optionally a token can be provided, if it differs from the token provided to GoReleaser
