@@ -20,11 +20,6 @@ builds:
 archives:
   - id: default
     name_template: "{{ .ProjectName }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-    replacements:
-      amd64: 64-bit
-      darwin: macOS
-      linux: Linux
-      windows: Windows
     format: tar.gz
     format_overrides:
       - goos: windows
