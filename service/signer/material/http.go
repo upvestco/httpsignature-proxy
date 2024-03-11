@@ -36,6 +36,8 @@ func GetRequestBody(req *http.Request) ([]byte, error) {
 		defer func() {
 			_ = reader.Close()
 		}()
+	} else if req.Body != nil {
+		reader = req.Body
 	}
 
 	body, err := io.ReadAll(reader)
@@ -46,5 +48,5 @@ func GetRequestBody(req *http.Request) ([]byte, error) {
 }
 
 func Format(k, v string) string {
-	return fmt.Sprintf("%s: %s", k, v)
+	return fmt.Sprintf("\"%s\": %s", k, v)
 }

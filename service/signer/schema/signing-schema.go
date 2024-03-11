@@ -46,6 +46,10 @@ const (
 	EcKeyType = "EC PRIVATE KEY"
 )
 
+const (
+	signingVersion = "15"
+)
+
 var (
 	errUnsupportedAlgorithm = errors.New("unsupported algorithm")
 	errWrongPrivateKey      = errors.New("wrong private key")
@@ -77,9 +81,12 @@ func (e *Sign) sign(m *material.Material, headers http.Header, log logger.Logger
 
 	headers.Set(material.SignatureInputHeader, fmt.Sprintf("%s=%s", sigID, signatureParams))
 	headers.Set(material.SignatureHeader, fmt.Sprintf("%s=:%s:", sigID, hash))
+	headers.Set(material.SignatureHeader, fmt.Sprintf("%s=:%s:", sigID, hash))
+	headers.Set(material.SigningVersionHeader, signingVersion)
 
 	log.LogF(" - Header '%s' added with value '%s'\n", material.SignatureInputHeader, signatureParams)
 	log.LogF(" - Header '%s' added with value '%s'\n", material.SignatureHeader, hash)
+	log.LogF(" - Header '%s' added with value '%s'\n", material.SigningVersionHeader, signingVersion)
 
 	log.Log(" - Headers list:\n")
 	for key, vals := range headers {

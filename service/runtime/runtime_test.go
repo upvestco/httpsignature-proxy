@@ -103,6 +103,7 @@ func (s *TestRuntimeSuite) setupRuntime(cfg *config.Config) {
 	}
 	r := NewRuntime(cfg, signerConfigs)
 	go r.Run()
+	time.Sleep(1 * time.Second)
 }
 
 func (s *TestRuntimeSuite) Test_RuntimeRun() {
@@ -144,7 +145,8 @@ func (s *testService) Start(t *testing.T) {
 
 	s.server = &http.Server{
 		Addr:    fmt.Sprintf("0.0.0.0:%d", verifierPort),
-		Handler: h}
+		Handler: h,
+	}
 
 	go func() {
 		if err := s.server.ListenAndServe(); err != nil {
