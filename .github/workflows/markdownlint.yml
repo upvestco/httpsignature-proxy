@@ -8,6 +8,6 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@main
+        uses: actions/checkout@v4
       - name: Run mdl
         uses: actionshub/markdownlint@main
