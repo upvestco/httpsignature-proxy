@@ -58,7 +58,6 @@ var startCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		// Setup the CLI arguments for start command
-
 		startProxy()
 	},
 }
