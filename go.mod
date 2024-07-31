@@ -9,7 +9,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/ory/x v0.0.633
+	github.com/ory/x v0.0.647
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cobra v1.8.0
@@ -27,6 +27,7 @@ require github.com/gookit/color v1.5.4
 require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
+	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
