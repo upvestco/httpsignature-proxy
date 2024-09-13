@@ -94,7 +94,7 @@ Generated key should be in PEM format. You can see an example in
 
 ## Generate ed25519 key pair
 
-OSx does not support the native generation of ed25519 private/public key pair.
+OSX does not support the native generation of ed25519 private/public key pair.
 You can use this way of generation **only on OS Unix based systems**.
 
 Generate private ed25519 key:

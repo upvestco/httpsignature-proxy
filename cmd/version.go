@@ -19,6 +19,7 @@ package cmd
 import (
 	"fmt"
 	"runtime"
+	"strings"
 
 	"github.com/gookit/color"
 	"github.com/spf13/cobra"
@@ -42,7 +43,12 @@ var versionCmd = &cobra.Command{
 
 func printVersion() {
 	cyan := color.FgCyan.Render
-	fmt.Printf("httpsignature-proxy %s\nbuilt with %s from commit %s at %s by %s\n", cyan(version), cyan(runtime.Version()), cyan(commit), cyan(date), cyan(builtBy))
+	info := []string{
+		fmt.Sprintf("httpsignature-proxy %s", cyan(version)),
+		fmt.Sprintf("built with %s from commit %s at %s by %s", cyan(runtime.Version()), cyan(commit), cyan(date), cyan(builtBy)),
+	}
+	output := strings.Join(info, "\n")
+	fmt.Println(output)
 }
 
 func init() {
