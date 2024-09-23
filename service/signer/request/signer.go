@@ -20,8 +20,7 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
-
-	"github.com/upvestco/httpsignature-proxy/service/signer/logger"
+	"github.com/upvestco/httpsignature-proxy/service/logger"
 	"github.com/upvestco/httpsignature-proxy/service/signer/material"
 )
 
@@ -48,5 +47,9 @@ func (e requestSigner) Sign(req *http.Request, s RequestSigner) error {
 	if err != nil {
 		return errors.Wrap(err, "MaterialFromRequest")
 	}
-	return errors.Wrap(s.SignRequest(m, req, e.log), "AddSignatureHeaders SignRequest")
+	ll := e.log
+	if len(req.Header.Get(logger.HttpProxyNoLogging)) > 0 {
+		ll = logger.NoVerboseLogger
+	}
+	return errors.Wrap(s.SignRequest(m, req, ll), "AddSignatureHeaders SignRequest")
 }

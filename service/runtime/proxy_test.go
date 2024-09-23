@@ -31,8 +31,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-
 	"github.com/upvestco/httpsignature-proxy/config"
+	"github.com/upvestco/httpsignature-proxy/service/logger"
 	"github.com/upvestco/httpsignature-proxy/service/signer"
 	"github.com/upvestco/httpsignature-proxy/service/signer/material"
 )
@@ -56,20 +56,21 @@ qFs3oIGIa4fr1C7SXmMyCohmJznOH3kGu73fV6GJkdc=
 )
 
 func TestRuntime_Run(t *testing.T) {
-	suite.Run(t, &TestRuntimeSuite{})
+	suite.Run(t, &TestProxySuite{})
 }
 
-type TestRuntimeSuite struct {
+type TestProxySuite struct {
 	suite.Suite
 	testServ *testService
 	clientID uuid.UUID
 }
 
-func (s *TestRuntimeSuite) SetupSuite() {
+func (s *TestProxySuite) SetupSuite() {
 	s.clientID = uuid.New()
 	cfg := &config.Config{
 		Port:           runtimePort,
 		DefaultTimeout: 30 * time.Second,
+		PullDelay:      time.Second,
 		KeyConfigs: []config.KeyConfig{
 			{
 				BaseConfig: config.BaseConfig{
@@ -83,15 +84,15 @@ func (s *TestRuntimeSuite) SetupSuite() {
 		},
 	}
 	s.setupTestService()
-	s.setupRuntime(cfg)
+	s.setupProxy(cfg)
 }
 
-func (s *TestRuntimeSuite) setupTestService() {
+func (s *TestProxySuite) setupTestService() {
 	s.testServ = &testService{}
 	s.testServ.Start(s.T())
 }
 
-func (s *TestRuntimeSuite) setupRuntime(cfg *config.Config) {
+func (s *TestProxySuite) setupProxy(cfg *config.Config) {
 	signerConfigs := make(map[string]SignerConfig)
 	for i := range cfg.KeyConfigs {
 		privateSchemeBuilder, err := signer.NewLocalPrivateSchemeBuilderFromSeed(privateTestKey, &cfg.KeyConfigs[i])
@@ -101,12 +102,12 @@ func (s *TestRuntimeSuite) setupRuntime(cfg *config.Config) {
 			KeyConfig:   cfg.KeyConfigs[i].BaseConfig,
 		}
 	}
-	r := NewRuntime(cfg, signerConfigs)
-	go r.Run()
+	r := NewProxy(cfg, signerConfigs, nil, logger.New(false))
+	require.NoError(s.T(), r.Run())
 	time.Sleep(1 * time.Second)
 }
 
-func (s *TestRuntimeSuite) Test_RuntimeRun() {
+func (s *TestProxySuite) Test_ProxyRun() {
 	url := fmt.Sprintf("http://localhost:%d/%s", runtimePort, "endpoint?param=val")
 	pl := []byte("This is the body")
 	body := bytes.NewBuffer(pl)
@@ -120,7 +121,9 @@ func (s *TestRuntimeSuite) Test_RuntimeRun() {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	require.NoError(s.T(), err)
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	assert.Exactly(s.T(), http.StatusOK, resp.StatusCode)
 	respBody, err := io.ReadAll(resp.Body)
 	require.NoError(s.T(), err)
