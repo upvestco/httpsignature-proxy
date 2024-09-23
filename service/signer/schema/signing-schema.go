@@ -27,8 +27,8 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/upvestco/httpsignature-proxy/service/logger"
 
-	"github.com/upvestco/httpsignature-proxy/service/signer/logger"
 	"github.com/upvestco/httpsignature-proxy/service/signer/material"
 )
 
@@ -84,18 +84,18 @@ func (e *Sign) sign(m *material.Material, headers http.Header, log logger.Logger
 	headers.Set(material.SignatureHeader, fmt.Sprintf("%s=:%s:", sigID, hash))
 	headers.Set(material.SigningVersionHeader, signingVersion)
 
-	log.LogF(" - Header '%s' added with value '%s'\n", material.SignatureInputHeader, signatureParams)
-	log.LogF(" - Header '%s' added with value '%s'\n", material.SignatureHeader, hash)
-	log.LogF(" - Header '%s' added with value '%s'\n", material.SigningVersionHeader, signingVersion)
+	log.LogF(" - Header '%s' added with value '%s'", material.SignatureInputHeader, signatureParams)
+	log.LogF(" - Header '%s' added with value '%s'", material.SignatureHeader, hash)
+	log.LogF(" - Header '%s' added with value '%s'", material.SigningVersionHeader, signingVersion)
 
-	log.Log(" - Headers list:\n")
+	log.Log(" - Headers list:")
 	for key, vals := range headers {
 		for _, val := range vals {
-			log.LogF("   - %s: '%v'\n", key, val)
+			log.LogF("   - %s: '%v'", key, val)
 		}
 	}
-	log.LogF(" - Body for signing: \n'%s'\n", body)
-	log.LogF(" - Body with escaped \\n :\n'%s'\n", strings.ReplaceAll(string(body), "\n", "\\n"))
+	log.LogF(" - Body for signing: \n'%s'", body)
+	log.LogF(" - Body with escaped \\n :\n'%s'", strings.ReplaceAll(string(body), "\n", "\\n"))
 
 	return nil
 }

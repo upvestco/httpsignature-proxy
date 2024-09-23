@@ -19,11 +19,14 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
-
 	"github.com/upvestco/httpsignature-proxy/config"
+	"github.com/upvestco/httpsignature-proxy/service/logger"
 	"github.com/upvestco/httpsignature-proxy/service/runtime"
 	"github.com/upvestco/httpsignature-proxy/service/signer"
 )
@@ -36,6 +39,9 @@ const (
 	serverBaseUrlFlag      = "server-base-url"
 	portFlag               = "port"
 	verboseModeFlag        = "verbose-mode"
+	listenFlag             = "listen"
+	eventsFlag             = "events"
+	showWebhookHeader      = "show-webhook-headers"
 )
 
 var (
@@ -47,6 +53,9 @@ var (
 	clientID           string
 	port               int
 	verboseMode        bool
+	listen             bool
+	logHeaders         bool
+	events             []string
 )
 
 var startCmd = &cobra.Command{
@@ -57,13 +66,11 @@ var startCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		// Setup the CLI arguments for start command
 		startProxy()
 	},
 }
 
 func init() {
-	// Register the start command
 	RootCmd.AddCommand(startCmd)
 
 	startCmd.Flags().StringVarP(&privateKeyFileName, privateKeyFileNameFlag, "f", "", "filename of the private key file")
@@ -71,16 +78,50 @@ func init() {
 	startCmd.Flags().StringVarP(&serverBaseUrl, serverBaseUrlFlag, "s", "", "server base URL to pipe the requests to")
 	startCmd.Flags().StringVarP(&keyID, keyIDFlag, "i", "", "id of the private key")
 	startCmd.Flags().StringVarP(&clientID, clientIDFlag, "c", "", "client id for the private key")
-
 	startCmd.Flags().BoolVarP(&verboseMode, verboseModeFlag, "v", false, "enable verbose mode")
-
 	startCmd.Flags().IntVarP(&port, portFlag, "p", 3000, "port to start server")
+	startCmd.Flags().BoolVarP(&listen, listenFlag, "l", false, "enable webhook events listening")
+	startCmd.Flags().StringSliceVarP(&events, eventsFlag, "e", []string{}, "subscribe for event types")
+	startCmd.Flags().BoolVar(&logHeaders, showWebhookHeader, false, "show webhook request headers.")
 }
 
-// startProxy starts the listener
 func startProxy() {
-	fmt.Printf("Starting to listen on port %d\n", port)
+	cfg, signerConfigs := initializeSignerConfig()
+	ll := logger.New(cfg.VerboseMode)
+	var userCredentialsCh chan runtime.UserCredentials
 
+	var tunnels *runtime.Tunnels
+	if listen {
+		userCredentialsCh = make(chan runtime.UserCredentials)
+		proxyAddress := fmt.Sprintf("http://localhost:%d", port)
+		tunnels = runtime.CreateTunnels(ll, events, proxyAddress,
+			func(credentials runtime.UserCredentials) runtime.ApiClient {
+				return runtime.NewClient(proxyAddress, credentials, cfg.DefaultTimeout)
+			}, logHeaders)
+	}
+
+	proxy := runtime.NewProxy(cfg, signerConfigs, userCredentialsCh, ll)
+	if err := proxy.Run(); err == nil {
+		ll.PrintF("Starting to listen on port %d\n", port)
+	} else {
+		panic("Fail to start http proxy: " + err.Error())
+	}
+	if tunnels != nil {
+		go tunnels.Start(userCredentialsCh)
+	}
+
+	ll.PrintLn("Press CTRL-C to exit")
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGTERM, syscall.SIGINT)
+	<-c
+
+	if tunnels != nil {
+		close(userCredentialsCh)
+		tunnels.Stop()
+	}
+}
+
+func initializeSignerConfig() (*config.Config, map[string]runtime.SignerConfig) {
 	flagConfig := config.KeyConfig{
 		ClientID: clientID,
 		BaseConfig: config.BaseConfig{
@@ -104,8 +145,10 @@ func startProxy() {
 	cfg := &config.Config{
 		Port:           port,
 		DefaultTimeout: 30 * time.Second,
+		PullDelay:      time.Second,
 		VerboseMode:    verboseMode,
 		KeyConfigs:     keyConfigs,
+		LogHeaders:     logHeaders,
 	}
 
 	signerConfigs := make(map[string]runtime.SignerConfig)
@@ -130,7 +173,7 @@ func startProxy() {
 		}
 	}
 
-	fmt.Printf("Private keys initialised: \n")
+	fmt.Println("Private keys initialised:")
 	for i := range keyConfigs {
 		fmt.Printf("  Key %d for clientID %s:\n", i+1, keyConfigs[i].ClientID)
 		fmt.Printf("  - Using private key file %s for HTTP Signatures\n", keyConfigs[i].PrivateKeyFileName)
@@ -138,8 +181,7 @@ func startProxy() {
 		fmt.Printf("  - Piping all requests to %s\n", keyConfigs[i].BaseUrl)
 	}
 
-	r := runtime.NewRuntime(cfg, signerConfigs)
-	r.Run()
+	return cfg, signerConfigs
 }
 
 func fatalConfigError(keyConfig config.KeyConfig, err error) {

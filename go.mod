@@ -22,10 +22,16 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )
 
-require github.com/gookit/color v1.5.4
+require (
+	github.com/gookit/color v1.5.4
+	github.com/neilotoole/jsoncolor v0.7.1
+	github.com/valyala/fastjson v1.6.4
+	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
+)
 
 require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
+	github.com/fatih/color v1.17.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
@@ -41,7 +47,7 @@ require (
 	github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
-	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa // indirect
+	golang.org/x/term v0.24.0 // indirect
 	golang.org/x/text v0.18.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
