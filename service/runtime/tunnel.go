@@ -33,6 +33,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/upvestco/httpsignature-proxy/service/logger"
 	"golang.org/x/exp/maps"
+	"golang.org/x/exp/rand"
 )
 
 type tunnel struct {
@@ -84,9 +85,6 @@ func (e *tunnel) doPulling(ctx context.Context, endpointID string) error {
 				if errors.Is(err, context.Canceled) {
 					return nil
 				}
-				if errors.Is(err, syscall.ECONNREFUSED) {
-					return nil
-				}
 				return errors.Wrap(err, "pullEvents")
 			}
 		}
@@ -106,6 +104,9 @@ func (e *tunnel) pullEvents(ctx context.Context, endpointID string) error {
 		if err != nil {
 			return errors.Wrap(err, "doPull")
 		}
+	}
+	if serviceIsNotAccessible(code) {
+		return errTunnelNotAvailable
 	}
 	if code != http.StatusOK {
 		return errors.New("unexpected http response code: " + strconv.Itoa(code))
@@ -194,8 +195,16 @@ func (e *tunnel) start() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	e.cancel = cancel
 
+	if err := e.apiClient.TunnelIsReady(ctx); err != nil {
+		if errors.Is(err, errTunnelNotAvailable) {
+			return errors.Wrap(errTunnelNotAvailable, "Webhook events listening is not available")
+		}
+		return errors.Wrap(err, "Could not create tunnel.")
+	}
+
 	if err := e.apiClient.Authorise(ctx, requiredScopes); err != nil {
-		return errors.Wrap(err, "Could not open the Webhook events tunnel. You client must have '"+requiredScopes+"' scope(s)")
+		e.logger.PrintLn(lightRed("Could not open the Webhook events tunnel. You client must have '" + requiredScopes + "' scope(s)"))
+		return nil
 	}
 	e.logger.LogF("client is authorised with '" + requiredScopes + "' scope(s)")
 
@@ -206,7 +215,7 @@ func (e *tunnel) start() error {
 	e.logger.LogF("backend endpoint (%s) for the client is created", endpoint)
 
 	request := WebhookRequest{
-		Title: "http signature temporary webhook",
+		Title: "http signature webhook " + randomString(8),
 		Url:   endpoint,
 		Type:  []string{"ALL"},
 		Config: &WebhookConfig{
@@ -244,7 +253,7 @@ func (e *tunnel) start() error {
 		}
 	}
 
-	return errors.Wrap(poolErr, "doPulling")
+	return errors.Wrap(poolErr, "doPulling on webhook "+webhookID)
 }
 
 func (e *tunnel) destroy() {
@@ -259,4 +268,13 @@ type Payload struct {
 		Type      string                 `json:"type"`
 		WebhookId string                 `json:"webhook_id"`
 	} `json:"payload"`
+}
+
+func randomString(n int) string {
+	const letters = "abcdefghijklmnopqrstuvwxyz"
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
 }
