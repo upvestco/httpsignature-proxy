@@ -21,6 +21,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -29,6 +30,8 @@ import (
 	"github.com/upvestco/httpsignature-proxy/service/logger"
 	"github.com/upvestco/httpsignature-proxy/service/runtime"
 	"github.com/upvestco/httpsignature-proxy/service/signer"
+	"github.com/upvestco/httpsignature-proxy/service/tunnels"
+	"github.com/upvestco/httpsignature-proxy/service/ui"
 )
 
 const (
@@ -42,6 +45,7 @@ const (
 	listenFlag             = "listen"
 	eventsFlag             = "events"
 	showWebhookHeader      = "show-webhook-headers"
+	uiFlag                 = "ui"
 )
 
 var (
@@ -55,6 +59,7 @@ var (
 	verboseMode        bool
 	listen             bool
 	logHeaders         bool
+	uiIsActive         bool
 	events             []string
 )
 
@@ -83,20 +88,38 @@ func init() {
 	startCmd.Flags().BoolVarP(&listen, listenFlag, "l", false, "enable webhook events listening")
 	startCmd.Flags().StringSliceVarP(&events, eventsFlag, "e", []string{}, "subscribe for event types")
 	startCmd.Flags().BoolVar(&logHeaders, showWebhookHeader, false, "show webhook request headers.")
+	startCmd.Flags().BoolVar(&uiIsActive, uiFlag, false, "enable UI mode")
 }
 
 func startProxy() {
 	cfg, signerConfigs := initializeSignerConfig()
-	ll := logger.New(cfg.VerboseMode)
-	var userCredentialsCh chan runtime.UserCredentials
+	if !listen && uiIsActive {
+		fmt.Printf("Warning: UI mode could be enabled with the webhook events listening only. Ignore --ui flag")
+	}
+	if uiIsActive && listen {
+		startWithUI(cfg, signerConfigs)
+	} else {
+		startDefault(cfg, signerConfigs)
+	}
+}
 
-	var tunnels *runtime.Tunnels
+func startWithUI(cfg *config.Config, signerConfigs map[string]runtime.SignerConfig) {
+	var tnls *tunnels.Tunnels
+	var userCredentialsCh chan tunnels.UserCredentials
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	ll := ui.CreateLogger(cfg.VerboseMode)
+
+	ui.Create(func() {
+		ui.Close()
+		wg.Done()
+	})
 	if listen {
-		userCredentialsCh = make(chan runtime.UserCredentials)
+		userCredentialsCh = make(chan tunnels.UserCredentials)
 		proxyAddress := fmt.Sprintf("http://localhost:%d", port)
-		tunnels = runtime.CreateTunnels(ll, events, proxyAddress,
-			func(credentials runtime.UserCredentials) runtime.ApiClient {
-				return runtime.NewClient(proxyAddress, credentials, cfg.DefaultTimeout)
+		tnls = tunnels.CreateTunnels(ll, events, proxyAddress,
+			func(credentials tunnels.UserCredentials) tunnels.ApiClient {
+				return tunnels.NewClient(proxyAddress, credentials, cfg.DefaultTimeout)
 			}, logHeaders)
 	}
 
@@ -106,18 +129,45 @@ func startProxy() {
 	} else {
 		panic("Fail to start http proxy: " + err.Error())
 	}
-	if tunnels != nil {
-		go tunnels.Start(userCredentialsCh)
+	if tnls != nil {
+		go tnls.Start(userCredentialsCh)
+	}
+	wg.Wait()
+	if tnls != nil {
+		close(userCredentialsCh)
+		tnls.Stop()
+	}
+}
+
+func startDefault(cfg *config.Config, signerConfigs map[string]runtime.SignerConfig) {
+	ll := logger.New(cfg.VerboseMode)
+	var userCredentialsCh chan tunnels.UserCredentials
+	var tnls *tunnels.Tunnels
+	if listen {
+		userCredentialsCh = make(chan tunnels.UserCredentials)
+		proxyAddress := fmt.Sprintf("http://localhost:%d", port)
+		tnls = tunnels.CreateTunnels(ll, events, proxyAddress,
+			func(credentials tunnels.UserCredentials) tunnels.ApiClient {
+				return tunnels.NewClient(proxyAddress, credentials, cfg.DefaultTimeout)
+			}, logHeaders)
 	}
 
+	proxy := runtime.NewProxy(cfg, signerConfigs, userCredentialsCh, ll)
+	if err := proxy.Run(); err == nil {
+		ll.PrintF("Starting to listen on port %d\n", port)
+	} else {
+		panic("Fail to start http proxy: " + err.Error())
+	}
+	if tnls != nil {
+		go tnls.Start(userCredentialsCh)
+	}
 	ll.PrintLn("Press CTRL-C to exit")
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGTERM, syscall.SIGINT)
 	<-c
-
-	if tunnels != nil {
+	if tnls != nil {
 		close(userCredentialsCh)
-		tunnels.Stop()
+		tnls.Stop()
 	}
 }
 

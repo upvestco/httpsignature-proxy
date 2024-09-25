@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package runtime
+package tunnels
 
 import (
 	"bytes"
@@ -28,6 +28,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/upvestco/httpsignature-proxy/service/logger"
+	"github.com/upvestco/httpsignature-proxy/service/ui"
 	"github.com/valyala/fastjson"
 )
 
@@ -38,7 +39,8 @@ type ApiClient interface {
 	DeleteWebhook(context.Context, string) error
 	OpenEndpoint(context.Context) (string, string, error)
 	CloseEndpoint(context.Context, string) error
-	GetEvents(context.Context, string) ([]PullItem, int, error)
+	GetEvents(context.Context, string) ([]ui.PullItem, int, error)
+	TunnelIsReady(context.Context) error
 }
 
 func NewClient(proxyAddress string, usersCredentials UserCredentials, timeout time.Duration) ApiClient {
@@ -114,23 +116,26 @@ func (e *apiClient) CreateWebhook(ctx context.Context, webhookRequest WebhookReq
 	return id, nil
 }
 
-type PullItem struct {
-	Headers   http.Header `json:"headers"`
-	Payload   string      `json:"payload"`
-	CreatedAt time.Time   `json:"created_at"`
+func (e *apiClient) TunnelIsReady(ctx context.Context) error {
+	_, code, err := e.get(ctx, "/events-acceptor-service/health")
+	if err != nil {
+		return errors.Wrap(err, "io")
+	}
+	if serviceIsNotAccessible(code) {
+		return errTunnelNotAvailable
+	}
+	if code != http.StatusOK {
+		return errors.New("wrong http code: " + strconv.Itoa(code))
+	}
+	return nil
 }
 
-func (e *apiClient) GetEvents(ctx context.Context, tunnelID string) ([]PullItem, int, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, e.proxyAddress+"/events-acceptor-service/endpoints/"+tunnelID, nil)
+func (e *apiClient) GetEvents(ctx context.Context, tunnelID string) ([]ui.PullItem, int, error) {
+	body, code, err := e.get(ctx, "/events-acceptor-service/endpoints/"+tunnelID)
 	if err != nil {
-		return nil, 0, errors.Wrap(err, "NewRequestWithContext")
+		return nil, 0, errors.Wrap(err, "get")
 	}
-	e.addHeaders(req)
-	code, body, err := e.io(req)
-	if err != nil {
-		return nil, 0, errors.Wrap(err, "io")
-	}
-	var res []PullItem
+	var res []ui.PullItem
 	if code == http.StatusOK {
 		if err := json.Unmarshal(body, &res); err != nil {
 			return nil, 0, errors.Wrap(err, "Unmarshal")
@@ -140,9 +145,12 @@ func (e *apiClient) GetEvents(ctx context.Context, tunnelID string) ([]PullItem,
 }
 
 func (e *apiClient) OpenEndpoint(ctx context.Context) (string, string, error) {
-	body, err := e.create(ctx, "", "/events-acceptor-service/endpoints")
+	body, code, err := e.post(ctx, "", "/events-acceptor-service/endpoints")
 	if err != nil {
 		return "", "", errors.Wrap(err, "create")
+	}
+	if code != http.StatusCreated {
+		return "", "", errors.Wrap(err, "Wrong HTTP code: "+strconv.Itoa(code))
 	}
 	url := fastjson.GetString(body, "url")
 	if len(url) == 0 {
@@ -180,23 +188,44 @@ func (e *apiClient) delete(ctx context.Context, uri string) error {
 }
 
 func (e *apiClient) create(ctx context.Context, request interface{}, uri string) ([]byte, error) {
-	out, err := json.Marshal(request)
+	body, code, err := e.post(ctx, request, uri)
 	if err != nil {
-		return nil, errors.Wrap(err, "Marshal")
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, e.proxyAddress+uri, bytes.NewBuffer(out))
-	if err != nil {
-		return nil, errors.Wrap(err, "NewRequestWithContext")
-	}
-	e.addHeaders(req)
-	code, body, err := e.io(req)
-	if err != nil {
-		return nil, errors.Wrap(err, "io")
+		return nil, errors.Wrap(err, "createWithCode")
 	}
 	if code != http.StatusCreated {
 		return nil, errors.New("Wrong http code: " + strconv.Itoa(code))
 	}
 	return body, err
+}
+
+func (e *apiClient) get(ctx context.Context, uri string) ([]byte, int, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, e.proxyAddress+uri, nil)
+	if err != nil {
+		return nil, 0, errors.Wrap(err, "NewRequestWithContext")
+	}
+	e.addHeaders(req)
+	code, body, err := e.io(req)
+	if err != nil {
+		return nil, 0, errors.Wrap(err, "io")
+	}
+	return body, code, err
+}
+
+func (e *apiClient) post(ctx context.Context, request interface{}, uri string) ([]byte, int, error) {
+	out, err := json.Marshal(request)
+	if err != nil {
+		return nil, 0, errors.Wrap(err, "Marshal")
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, e.proxyAddress+uri, bytes.NewBuffer(out))
+	if err != nil {
+		return nil, 0, errors.Wrap(err, "NewRequestWithContext")
+	}
+	e.addHeaders(req)
+	code, body, err := e.io(req)
+	if err != nil {
+		return nil, 0, errors.Wrap(err, "io")
+	}
+	return body, code, err
 }
 
 func (e *apiClient) patch(ctx context.Context, request interface{}, uri string) error {
@@ -235,7 +264,7 @@ func (e *apiClient) io(req *http.Request) (int, []byte, error) {
 }
 
 func (e *apiClient) addHeaders(req *http.Request) {
-	req.Header.Add(upvestClientID, e.usersCredentials.ClientID)
+	req.Header.Add("upvest-client-id", e.usersCredentials.ClientID)
 	req.Header.Add("Authorization", "Bearer "+e.accessToken)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add(logger.HttpProxyNoLogging, "true")

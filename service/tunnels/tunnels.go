@@ -1,17 +1,21 @@
-package runtime
+package tunnels
 
 import (
 	"context"
-	"encoding/json"
-	"io"
-	"net/http"
+	"fmt"
+	"os"
 	"sync"
-	"time"
 
+	"github.com/gookit/color"
+	colorjson "github.com/neilotoole/jsoncolor"
 	"github.com/pkg/errors"
 	"github.com/upvestco/httpsignature-proxy/service/logger"
+	"github.com/upvestco/httpsignature-proxy/service/ui"
 	"golang.org/x/exp/maps"
 )
+
+var cyan = fmt.Sprintf
+var lightRed = fmt.Sprintf
 
 type UserCredentials struct {
 	ClientID     string `json:"client_id"`
@@ -34,6 +38,12 @@ type Tunnels struct {
 }
 
 func CreateTunnels(logger logger.Logger, events []string, proxyAddress string, createApiClient func(credentials UserCredentials) ApiClient, logHeaders bool) *Tunnels {
+	if !ui.IsCreated() {
+		if colorjson.IsColorTerminal(os.Stdout) {
+			cyan = color.FgCyan.Sprintf
+			lightRed = color.FgLightRed.Sprintf
+		}
+	}
 	return &Tunnels{
 		logger:          logger,
 		tunnels:         newTunnelsMap(),
@@ -56,44 +66,23 @@ func (e *Tunnels) Stop() {
 	e.closeGroup.Wait()
 }
 
-func AskForUserCredentials(proxyAddress string) (UserCredentials, int, error) {
-	client := http.Client{
-		Timeout: time.Second,
-	}
-	ctx := context.Background()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, proxyAddress+"/proxy-pass", nil)
-	if err != nil {
-		return UserCredentials{}, 0, errors.Wrap(err, "NewRequestWithContext")
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return UserCredentials{}, 0, errors.Wrap(err, "DefaultClient.Do")
-	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-
-	if resp.StatusCode != http.StatusAccepted {
-		return UserCredentials{}, resp.StatusCode, nil
-	}
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return UserCredentials{}, 0, errors.Wrap(err, "ReadAll")
-	}
-	var uc UserCredentials
-
-	if err := json.Unmarshal(body, &uc); err != nil {
-		return UserCredentials{}, http.StatusBadRequest, nil
-	}
-	return uc, resp.StatusCode, nil
-}
-
 func (e *Tunnels) Start(userCredentialsCh chan UserCredentials) {
-	e.logger.Print(cyan("############################################################\n"))
-	e.logger.Print(cyan("To start listening webhook events - send /auth/token request\n"))
-	e.logger.Print(cyan("############################################################\n"))
 	ctx, cancel := context.WithCancel(context.Background())
 	e.cancel = cancel
+
+	if err := e.createApiClient(AnonUserCredentials).TunnelIsReady(ctx); err != nil {
+		if errors.Is(err, errTunnelNotAvailable) {
+			e.logger.PrintLn(cyan("Webhook events listening is not available"))
+		} else {
+			e.logger.Log(err.Error())
+		}
+		return
+	}
+
+	e.logger.PrintLn(cyan("###############################################################"))
+	e.logger.PrintLn(cyan("To start event listener, send an auth request: POST /auth/token"))
+	e.logger.PrintLn(cyan("###############################################################"))
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -111,7 +100,7 @@ func (e *Tunnels) Start(userCredentialsCh chan UserCredentials) {
 			e.closeGroup.Add(1)
 			go func(t *tunnel, uc UserCredentials) {
 				if err := t.start(); err != nil {
-					e.logger.Log(err.Error() + "\nListener closed")
+					e.logger.PrintLn(lightRed(err.Error()))
 				}
 				e.tunnels.remove(uc.ClientID)
 				e.closeGroup.Done()

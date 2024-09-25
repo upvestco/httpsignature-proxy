@@ -25,6 +25,7 @@ import (
 	"github.com/upvestco/httpsignature-proxy/config"
 	"github.com/upvestco/httpsignature-proxy/service/logger"
 	"github.com/upvestco/httpsignature-proxy/service/signer/schema"
+	"github.com/upvestco/httpsignature-proxy/service/tunnels"
 )
 
 type Proxy struct {
@@ -32,7 +33,7 @@ type Proxy struct {
 	signerConfigs     map[string]SignerConfig
 	logger            logger.Logger
 	server            *http.Server
-	userCredentialsCh chan UserCredentials
+	userCredentialsCh chan tunnels.UserCredentials
 }
 
 type SignerConfig struct {
@@ -40,7 +41,7 @@ type SignerConfig struct {
 	KeyConfig   config.BaseConfig
 }
 
-func NewProxy(cfg *config.Config, signerConfigs map[string]SignerConfig, userCredentialsCh chan UserCredentials, logger logger.Logger) Proxy {
+func NewProxy(cfg *config.Config, signerConfigs map[string]SignerConfig, userCredentialsCh chan tunnels.UserCredentials, logger logger.Logger) Proxy {
 	return Proxy{
 		cfg:               cfg,
 		logger:            logger,

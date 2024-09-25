@@ -54,6 +54,7 @@ Flags:
   -l, --listen                        create webhook events tunel and log incomming events to console
   -e  --events strings                only with -l flag. Log only events of the specified types
       --show-webhook-headers          only with -l flag. Show http headers coming with webhook events
+      --ui                            enable Shell UI mode
 
 Global Flags:
       --config string   config file (default is $HOME/.httpsignature-proxy.yaml)
