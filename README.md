@@ -4,7 +4,7 @@ Localhost HTTP Signatures proxy.
 
 The Upvest Investment API requires you to
 use [HTTP Signatures](https://tools.ietf.org/id/draft-ietf-httpbis-message-signatures-01.html)
-for extra layer of security to verify the call is coming from a real tenant as
+for an extra layer of security to verify the call is coming from a real tenant as
 well as ensure the request hasn't been tampered with on the way.
 
 This is good for security but can be cumbersome while developing. That's why
