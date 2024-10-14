@@ -65,9 +65,9 @@ func (e *Tunnels) Start(userCredentialsCh chan UserCredentials) {
 		return
 	}
 
-	e.logger.PrintLn(cyan("############################################################"))
-	e.logger.PrintLn(cyan("To start listening webhook events - send /auth/token request"))
-	e.logger.PrintLn(cyan("############################################################"))
+	e.logger.PrintLn(cyan("###############################################################"))
+	e.logger.PrintLn(cyan("To start event listener, send an auth request: POST /auth/token"))
+	e.logger.PrintLn(cyan("###############################################################"))
 
 	for {
 		select {

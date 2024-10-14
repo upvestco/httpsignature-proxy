@@ -119,12 +119,12 @@ func (e *tunnel) pullEvents(ctx context.Context, endpointID string) error {
 		}
 		filtered := origLen != filteredLen
 
-		e.logger.PrintLn(cyan("== new incoming webhook request"))
+		e.logger.PrintLn(cyan("== new webhook event received == "))
 		e.logger.PrintLn(cyan("== received at: %s", item.CreatedAt.Format(time.DateTime)))
 		if e.logHeaders {
 			e.printHeaders(item, filtered)
 		}
-		payloadMessage := "== payload"
+		payloadMessage := ""
 		if filtered {
 			payloadMessage += fmt.Sprintf(" was filtered: origin events: %d, filtered events: %d)", origLen, filteredLen)
 		}
