@@ -40,6 +40,7 @@ const (
 	portFlag               = "port"
 	verboseModeFlag        = "verbose-mode"
 	listenFlag             = "listen"
+	updateFlag             = "update"
 	eventsFlag             = "events"
 	showWebhookHeader      = "show-webhook-headers"
 )
@@ -54,6 +55,7 @@ var (
 	port               int
 	verboseMode        bool
 	listen             bool
+	update             bool
 	logHeaders         bool
 	events             []string
 )
