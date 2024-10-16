@@ -19,19 +19,13 @@ package cmd
 import (
 	"fmt"
 	"log"
-	"os"
-	"os/signal"
-	"sync"
-	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/upvestco/httpsignature-proxy/config"
-	"github.com/upvestco/httpsignature-proxy/service/logger"
 	"github.com/upvestco/httpsignature-proxy/service/runtime"
 	"github.com/upvestco/httpsignature-proxy/service/signer"
-	"github.com/upvestco/httpsignature-proxy/service/tunnels"
-	"github.com/upvestco/httpsignature-proxy/service/ui"
 )
 
 const (
@@ -42,10 +36,7 @@ const (
 	serverBaseUrlFlag      = "server-base-url"
 	portFlag               = "port"
 	verboseModeFlag        = "verbose-mode"
-	listenFlag             = "listen"
-	eventsFlag             = "events"
-	showWebhookHeader      = "show-webhook-headers"
-	uiFlag                 = "ui"
+	updateFlag             = "update"
 )
 
 var (
@@ -57,10 +48,7 @@ var (
 	clientID           string
 	port               int
 	verboseMode        bool
-	listen             bool
-	logHeaders         bool
-	uiIsActive         bool
-	events             []string
+	update             bool
 )
 
 var startCmd = &cobra.Command{
@@ -71,11 +59,13 @@ var startCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
+		// Setup the CLI arguments for start command
 		startProxy()
 	},
 }
 
 func init() {
+	// Register the start command
 	RootCmd.AddCommand(startCmd)
 
 	startCmd.Flags().StringVarP(&privateKeyFileName, privateKeyFileNameFlag, "f", "", "filename of the private key file")
@@ -83,95 +73,16 @@ func init() {
 	startCmd.Flags().StringVarP(&serverBaseUrl, serverBaseUrlFlag, "s", "", "server base URL to pipe the requests to")
 	startCmd.Flags().StringVarP(&keyID, keyIDFlag, "i", "", "id of the private key")
 	startCmd.Flags().StringVarP(&clientID, clientIDFlag, "c", "", "client id for the private key")
+
 	startCmd.Flags().BoolVarP(&verboseMode, verboseModeFlag, "v", false, "enable verbose mode")
+
 	startCmd.Flags().IntVarP(&port, portFlag, "p", 3000, "port to start server")
-	startCmd.Flags().BoolVarP(&listen, listenFlag, "l", false, "enable webhook events listening")
-	startCmd.Flags().StringSliceVarP(&events, eventsFlag, "e", []string{}, "subscribe for event types")
-	startCmd.Flags().BoolVar(&logHeaders, showWebhookHeader, false, "show webhook request headers.")
-	startCmd.Flags().BoolVar(&uiIsActive, uiFlag, false, "enable UI mode")
 }
 
+// startProxy starts the listener
 func startProxy() {
-	cfg, signerConfigs := initializeSignerConfig()
-	if !listen && uiIsActive {
-		fmt.Printf("Warning: UI mode could be enabled with the webhook events listening only. Ignore --ui flag")
-	}
-	if uiIsActive && listen {
-		startWithUI(cfg, signerConfigs)
-	} else {
-		startDefault(cfg, signerConfigs)
-	}
-}
+	fmt.Printf("Starting to listen on port %d\n", port)
 
-func startWithUI(cfg *config.Config, signerConfigs map[string]runtime.SignerConfig) {
-	var tnls *tunnels.Tunnels
-	var userCredentialsCh chan tunnels.UserCredentials
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	ll := ui.CreateLogger(cfg.VerboseMode)
-
-	ui.Create(func() {
-		ui.Close()
-		wg.Done()
-	})
-	if listen {
-		userCredentialsCh = make(chan tunnels.UserCredentials)
-		proxyAddress := fmt.Sprintf("http://localhost:%d", port)
-		tnls = tunnels.CreateTunnels(ll, events, proxyAddress,
-			func(credentials tunnels.UserCredentials) tunnels.ApiClient {
-				return tunnels.NewClient(proxyAddress, credentials, cfg.DefaultTimeout)
-			}, logHeaders)
-	}
-
-	proxy := runtime.NewProxy(cfg, signerConfigs, userCredentialsCh, ll)
-	if err := proxy.Run(); err == nil {
-		ll.PrintF("Starting to listen on port %d\n", port)
-	} else {
-		panic("Fail to start http proxy: " + err.Error())
-	}
-	if tnls != nil {
-		go tnls.Start(userCredentialsCh)
-	}
-	wg.Wait()
-	if tnls != nil {
-		close(userCredentialsCh)
-		tnls.Stop()
-	}
-}
-
-func startDefault(cfg *config.Config, signerConfigs map[string]runtime.SignerConfig) {
-	ll := logger.New(cfg.VerboseMode)
-	var userCredentialsCh chan tunnels.UserCredentials
-	var tnls *tunnels.Tunnels
-	if listen {
-		userCredentialsCh = make(chan tunnels.UserCredentials)
-		proxyAddress := fmt.Sprintf("http://localhost:%d", port)
-		tnls = tunnels.CreateTunnels(ll, events, proxyAddress,
-			func(credentials tunnels.UserCredentials) tunnels.ApiClient {
-				return tunnels.NewClient(proxyAddress, credentials, cfg.DefaultTimeout)
-			}, logHeaders)
-	}
-
-	proxy := runtime.NewProxy(cfg, signerConfigs, userCredentialsCh, ll)
-	if err := proxy.Run(); err == nil {
-		ll.PrintF("Starting to listen on port %d\n", port)
-	} else {
-		panic("Fail to start http proxy: " + err.Error())
-	}
-	if tnls != nil {
-		go tnls.Start(userCredentialsCh)
-	}
-	ll.PrintLn("Press CTRL-C to exit")
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGTERM, syscall.SIGINT)
-	<-c
-	if tnls != nil {
-		close(userCredentialsCh)
-		tnls.Stop()
-	}
-}
-
-func initializeSignerConfig() (*config.Config, map[string]runtime.SignerConfig) {
 	flagConfig := config.KeyConfig{
 		ClientID: clientID,
 		BaseConfig: config.BaseConfig{
@@ -195,10 +106,8 @@ func initializeSignerConfig() (*config.Config, map[string]runtime.SignerConfig) 
 	cfg := &config.Config{
 		Port:           port,
 		DefaultTimeout: 30 * time.Second,
-		PullDelay:      time.Second,
 		VerboseMode:    verboseMode,
 		KeyConfigs:     keyConfigs,
-		LogHeaders:     logHeaders,
 	}
 
 	signerConfigs := make(map[string]runtime.SignerConfig)
@@ -223,7 +132,7 @@ func initializeSignerConfig() (*config.Config, map[string]runtime.SignerConfig) 
 		}
 	}
 
-	fmt.Println("Private keys initialised:")
+	fmt.Printf("Private keys initialised: \n")
 	for i := range keyConfigs {
 		fmt.Printf("  Key %d for clientID %s:\n", i+1, keyConfigs[i].ClientID)
 		fmt.Printf("  - Using private key file %s for HTTP Signatures\n", keyConfigs[i].PrivateKeyFileName)
@@ -231,7 +140,8 @@ func initializeSignerConfig() (*config.Config, map[string]runtime.SignerConfig) 
 		fmt.Printf("  - Piping all requests to %s\n", keyConfigs[i].BaseUrl)
 	}
 
-	return cfg, signerConfigs
+	r := runtime.NewRuntime(cfg, signerConfigs)
+	r.Run()
 }
 
 func fatalConfigError(keyConfig config.KeyConfig, err error) {
