@@ -18,6 +18,8 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -42,9 +44,10 @@ var versionCmd = &cobra.Command{
 }
 
 func printVersion() {
+	_, mod := filepath.Split(os.Args[0])
 	cyan := color.FgCyan.Render
 	info := []string{
-		fmt.Sprintf("httpsignature-proxy %s", cyan(version)),
+		fmt.Sprintf(mod+" %s", cyan(version)),
 		fmt.Sprintf("built with %s from commit %s at %s by %s", cyan(runtime.Version()), cyan(commit), cyan(date), cyan(builtBy)),
 	}
 	output := strings.Join(info, "\n")

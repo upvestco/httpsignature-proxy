@@ -34,7 +34,9 @@ type Config struct {
 	BaseConfig     *BaseConfig
 	KeyConfigs     []KeyConfig
 	DefaultTimeout time.Duration
+	PullDelay      time.Duration
 	VerboseMode    bool
+	LogHeaders     bool
 	Port           int
 }
 
