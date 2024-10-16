@@ -36,6 +36,7 @@ const (
 	serverBaseUrlFlag      = "server-base-url"
 	portFlag               = "port"
 	verboseModeFlag        = "verbose-mode"
+	updateFlag             = "update"
 )
 
 var (
@@ -47,6 +48,7 @@ var (
 	clientID           string
 	port               int
 	verboseMode        bool
+	update             bool
 )
 
 var startCmd = &cobra.Command{
