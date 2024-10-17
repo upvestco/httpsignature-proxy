@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package runtime
+package tunnels
 
 import (
 	"bytes"
@@ -28,10 +28,9 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/upvestco/httpsignature-proxy/service/logger"
+	"github.com/upvestco/httpsignature-proxy/service/ui"
 	"github.com/valyala/fastjson"
 )
-
-var errTunnelNotAvailable = errors.New("events tunnel is not available")
 
 type ApiClient interface {
 	Authorise(context.Context, string) error
@@ -40,17 +39,8 @@ type ApiClient interface {
 	DeleteWebhook(context.Context, string) error
 	OpenEndpoint(context.Context) (string, string, error)
 	CloseEndpoint(context.Context, string) error
-	GetEvents(context.Context, string) ([]PullItem, int, error)
+	GetEvents(context.Context, string) ([]ui.PullItem, int, error)
 	TunnelIsReady(context.Context) error
-}
-
-func serviceIsNotAccessible(code int) bool {
-	return code == http.StatusNotFound || code == http.StatusServiceUnavailable || code == http.StatusBadGateway
-}
-
-var anonUserCredentials = UserCredentials{
-	ClientID:     "00000000-0000-0000-0000-000000000000",
-	ClientSecret: "",
 }
 
 func NewClient(proxyAddress string, usersCredentials UserCredentials, timeout time.Duration) ApiClient {
@@ -126,12 +116,6 @@ func (e *apiClient) CreateWebhook(ctx context.Context, webhookRequest WebhookReq
 	return id, nil
 }
 
-type PullItem struct {
-	Headers   http.Header `json:"headers"`
-	Payload   string      `json:"payload"`
-	CreatedAt time.Time   `json:"created_at"`
-}
-
 func (e *apiClient) TunnelIsReady(ctx context.Context) error {
 	_, code, err := e.get(ctx, "/events-acceptor-service/health")
 	if err != nil {
@@ -146,12 +130,12 @@ func (e *apiClient) TunnelIsReady(ctx context.Context) error {
 	return nil
 }
 
-func (e *apiClient) GetEvents(ctx context.Context, tunnelID string) ([]PullItem, int, error) {
+func (e *apiClient) GetEvents(ctx context.Context, tunnelID string) ([]ui.PullItem, int, error) {
 	body, code, err := e.get(ctx, "/events-acceptor-service/endpoints/"+tunnelID)
 	if err != nil {
 		return nil, 0, errors.Wrap(err, "get")
 	}
-	var res []PullItem
+	var res []ui.PullItem
 	if code == http.StatusOK {
 		if err := json.Unmarshal(body, &res); err != nil {
 			return nil, 0, errors.Wrap(err, "Unmarshal")
@@ -280,7 +264,7 @@ func (e *apiClient) io(req *http.Request) (int, []byte, error) {
 }
 
 func (e *apiClient) addHeaders(req *http.Request) {
-	req.Header.Add(upvestClientID, e.usersCredentials.ClientID)
+	req.Header.Add("upvest-client-id", e.usersCredentials.ClientID)
 	req.Header.Add("Authorization", "Bearer "+e.accessToken)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add(logger.HttpProxyNoLogging, "true")

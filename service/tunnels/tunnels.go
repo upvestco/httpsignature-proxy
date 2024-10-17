@@ -1,13 +1,21 @@
-package runtime
+package tunnels
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"sync"
 
+	"github.com/gookit/color"
+	colorjson "github.com/neilotoole/jsoncolor"
 	"github.com/pkg/errors"
 	"github.com/upvestco/httpsignature-proxy/service/logger"
+	"github.com/upvestco/httpsignature-proxy/service/ui"
 	"golang.org/x/exp/maps"
 )
+
+var cyan = fmt.Sprintf
+var lightRed = fmt.Sprintf
 
 type UserCredentials struct {
 	ClientID     string `json:"client_id"`
@@ -30,6 +38,12 @@ type Tunnels struct {
 }
 
 func CreateTunnels(logger logger.Logger, events []string, proxyAddress string, createApiClient func(credentials UserCredentials) ApiClient, logHeaders bool) *Tunnels {
+	if !ui.IsCreated() {
+		if colorjson.IsColorTerminal(os.Stdout) {
+			cyan = color.FgCyan.Sprintf
+			lightRed = color.FgLightRed.Sprintf
+		}
+	}
 	return &Tunnels{
 		logger:          logger,
 		tunnels:         newTunnelsMap(),
@@ -56,7 +70,7 @@ func (e *Tunnels) Start(userCredentialsCh chan UserCredentials) {
 	ctx, cancel := context.WithCancel(context.Background())
 	e.cancel = cancel
 
-	if err := e.createApiClient(anonUserCredentials).TunnelIsReady(ctx); err != nil {
+	if err := e.createApiClient(AnonUserCredentials).TunnelIsReady(ctx); err != nil {
 		if errors.Is(err, errTunnelNotAvailable) {
 			e.logger.PrintLn(cyan("Webhook events listening is not available"))
 		} else {

@@ -29,6 +29,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/upvestco/httpsignature-proxy/service/logger"
 	"github.com/upvestco/httpsignature-proxy/service/signer"
+	"github.com/upvestco/httpsignature-proxy/service/tunnels"
 
 	"github.com/upvestco/httpsignature-proxy/config"
 	"github.com/upvestco/httpsignature-proxy/service/signer/material"
@@ -53,10 +54,10 @@ type Handler struct {
 	cfg               *config.Config
 	requestSigner     request.Signer
 	log               logger.Logger
-	userCredentialsCh chan UserCredentials
+	userCredentialsCh chan tunnels.UserCredentials
 }
 
-func newHandler(cfg *config.Config, signerConfigs map[string]SignerConfig, userCredentialsCh chan UserCredentials, log logger.Logger) *Handler {
+func newHandler(cfg *config.Config, signerConfigs map[string]SignerConfig, userCredentialsCh chan tunnels.UserCredentials, log logger.Logger) *Handler {
 	return &Handler{
 		cfg:               cfg,
 		log:               log,
@@ -281,8 +282,8 @@ func (h *Handler) proxy(rw http.ResponseWriter, inReq *http.Request, ll logger.L
 	return requestBody
 }
 
-func (h *Handler) parseAuthTokenBody(body []byte) UserCredentials {
-	var res UserCredentials
+func (h *Handler) parseAuthTokenBody(body []byte) tunnels.UserCredentials {
+	var res tunnels.UserCredentials
 	for _, keyValue := range strings.Split(string(body), "&") {
 		kv := strings.Split(keyValue, "=")
 		if kv[0] == "client_id" {

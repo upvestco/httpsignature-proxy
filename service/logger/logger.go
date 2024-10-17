@@ -28,7 +28,6 @@ type Logger interface {
 	LogF(format string, a ...interface{})
 
 	PrintF(format string, a ...interface{})
-	Print(message string)
 	PrintLn(message string)
 }
 
@@ -44,10 +43,6 @@ type ConsoleLogger struct {
 
 func (l *ConsoleLogger) PrintF(format string, a ...interface{}) {
 	fmt.Printf(format, a...)
-}
-
-func (l *ConsoleLogger) Print(message string) {
-	fmt.Print(message)
 }
 
 func (l *ConsoleLogger) PrintLn(message string) {

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package runtime
+package tunnels
 
 import (
 	"bytes"
@@ -28,13 +28,24 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gookit/color"
 	colorjson "github.com/neilotoole/jsoncolor"
 	"github.com/pkg/errors"
 	"github.com/upvestco/httpsignature-proxy/service/logger"
+	"github.com/upvestco/httpsignature-proxy/service/ui"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/rand"
 )
+
+var errTunnelNotAvailable = errors.New("events tunnel is not available")
+
+func serviceIsNotAccessible(code int) bool {
+	return code == http.StatusNotFound || code == http.StatusServiceUnavailable || code == http.StatusBadGateway
+}
+
+var AnonUserCredentials = UserCredentials{
+	ClientID:     "00000000-0000-0000-0000-000000000000",
+	ClientSecret: "",
+}
 
 type tunnel struct {
 	apiClient    ApiClient
@@ -42,16 +53,6 @@ type tunnel struct {
 	logger       logger.Logger
 	logHeaders   bool
 	cancel       context.CancelFunc
-}
-
-var cyan = fmt.Sprintf
-var lightRed = fmt.Sprintf
-
-func init() {
-	if colorjson.IsColorTerminal(os.Stdout) {
-		cyan = color.FgCyan.Sprintf
-		lightRed = color.FgLightRed.Sprintf
-	}
 }
 
 func createTunnel(apiClient ApiClient, events []string, logHeaders bool, logger logger.Logger) *tunnel {
@@ -113,6 +114,10 @@ func (e *tunnel) pullEvents(ctx context.Context, endpointID string) error {
 	}
 
 	for _, item := range items {
+		ui.AddPayload(item)
+		if ui.IsCreated() {
+			continue
+		}
 		formatted, origLen, filteredLen := e.filterAndFormat(item.Payload)
 		if filteredLen == 0 {
 			continue
@@ -138,7 +143,7 @@ func (e *tunnel) filterAndFormat(payload string) (string, int, int) {
 	if len(payload) == 0 {
 		return "", 0, 0
 	}
-	var in Payload
+	var in ui.Payload
 	if err := json.Unmarshal([]byte(payload), &in); err != nil {
 		return payload, 1, 1
 	}
@@ -155,7 +160,7 @@ func (e *tunnel) filterAndFormat(payload string) (string, int, int) {
 	return buff.String(), len(in.Payload), len(out.Payload)
 }
 
-func (e *tunnel) printHeaders(item PullItem, filtered bool) {
+func (e *tunnel) printHeaders(item ui.PullItem, filtered bool) {
 	e.logger.PrintLn(cyan("== headers"))
 	maxL := 0
 	for key := range item.Headers {
@@ -164,8 +169,7 @@ func (e *tunnel) printHeaders(item PullItem, filtered bool) {
 		}
 	}
 	for key, values := range item.Headers {
-		e.logger.Print(cyan("%s%s ", strings.Repeat(" ", maxL-len(key)), key))
-		e.logger.PrintF(": %s", strings.Join(values, ","))
+		e.logger.PrintF("%s : %s", cyan("%s%s ", strings.Repeat(" ", maxL-len(key)), key), strings.Join(values, ","))
 		remarks := ""
 		if key == "Content-Length" {
 			remarks = " # The Content-Length header shows the length of the original payload. The payload was formated"
@@ -178,8 +182,8 @@ func (e *tunnel) printHeaders(item PullItem, filtered bool) {
 	}
 }
 
-func (e *tunnel) filterPayload(in Payload) Payload {
-	var out Payload
+func (e *tunnel) filterPayload(in ui.Payload) ui.Payload {
+	var out ui.Payload
 	if len(e.eventsFilter) == 0 {
 		return in
 	}
@@ -258,16 +262,6 @@ func (e *tunnel) start() error {
 
 func (e *tunnel) destroy() {
 	e.cancel()
-}
-
-type Payload struct {
-	Payload []struct {
-		CreatedAt time.Time              `json:"created_at"`
-		Id        string                 `json:"id"`
-		Object    map[string]interface{} `json:"object"`
-		Type      string                 `json:"type"`
-		WebhookId string                 `json:"webhook_id"`
-	} `json:"payload"`
 }
 
 func randomString(n int) string {
