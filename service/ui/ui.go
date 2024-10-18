@@ -21,13 +21,15 @@ const (
 	eventsListWidth            = 40
 	defaultHeadersWindowHeight = 10
 
-	copyEventButtonText   = " Copy event "
-	copyHeadersButtonText = " Copy headers "
-	exitButtonText        = " Exit "
-	toggleEventsText      = " WH Events(%d) "
-	toggleLogsText        = " Proxy log(%d) "
-	hideHeadersTest       = " Hide headers "
-	showHeadersTest       = " Show headers "
+	copyEventButtonText        = " Copy event "
+	copyHeadersButtonText      = " Copy headers "
+	exitButtonText             = " Exit "
+	toggleEventsText           = " WH Events "
+	toggleEventsTextWithNumber = " WH Events(%d) "
+	toggleLogsText             = " Proxy log "
+	toggleLogsTextWithNumber   = " Proxy log(%d) "
+	hideHeadersTest            = " Hide headers "
+	showHeadersTest            = " Show headers "
 
 	eventsScreenID = "eventsScreen"
 	logScreenID    = "logsScreen"
@@ -39,7 +41,7 @@ var (
 	headers             *window.Cards
 	eventsList          *elements.SelectView
 	logsList            *elements.SelectView
-	selected            Event
+	selected            *Event
 	headersWindowHeight = defaultHeadersWindowHeight
 	created             bool
 )
@@ -63,10 +65,8 @@ func AddPayload(payload PullItem) {
 		v := elements.NewJSONView(window.WholeArea())
 		v.Set(ev)
 		events.Insert(id, v)
-		var s string
-		if len(in.Payload) == 1 {
-			s = " "
-		} else {
+		var s string = " "
+		if len(in.Payload) > 1 {
 			if i == 0 {
 				s = "┌"
 			} else if i == len(in.Payload)-1 {
@@ -76,8 +76,8 @@ func AddPayload(payload PullItem) {
 			}
 		}
 		title := fmt.Sprintf("%s %s %s", s, time.Now().Format(time.DateTime), ev.Type)
-
-		eventsList.Append(NewEvent(id, title, []byte(payload.Payload), payload.Headers))
+		event := NewEvent(id, title, []byte(payload.Payload), payload.Headers)
+		eventsList.Append(event)
 
 		hdr := elements.NewHeadersView(window.WholeArea())
 		hdr.SetKeyColor(termbox.ColorLightBlue)
@@ -119,7 +119,10 @@ func Create(onClose func()) {
 	mainFrame.Add(exitButton)
 
 	getToggleEventsText := func(all int) string {
-		return fmt.Sprintf(toggleEventsText, all)
+		if all == 0 {
+			return toggleEventsText
+		}
+		return fmt.Sprintf(toggleEventsTextWithNumber, all)
 	}
 	toggleEvents := elements.NewToggle(mainWindow, getToggleEventsText(0), nil)
 	toggleEvents.SetTransformer(func(parent window.Area) window.Area {
@@ -130,7 +133,10 @@ func Create(onClose func()) {
 	mainFrame.Add(toggleEvents)
 
 	getToggleLogsText := func(all int) string {
-		return fmt.Sprintf(toggleLogsText, all)
+		if all == 0 {
+			return toggleLogsText
+		}
+		return fmt.Sprintf(toggleLogsTextWithNumber, all)
 	}
 
 	toggleLogs := elements.NewToggle(mainWindow, getToggleLogsText(0), nil)
@@ -151,6 +157,8 @@ func Create(onClose func()) {
 	toggleLogs.OnPress(func() {
 		screens.BringUp(logScreenID)
 		toggleEvents.Release()
+		logsList.MarkAllVisited()
+		toggleLogs.SetText(getToggleLogsText(logsList.GetNotVisited()))
 		toggleLogs.SetCustomStyle(0)
 		mainWindow.Update(mainFrame)
 	})
@@ -181,16 +189,18 @@ func Create(onClose func()) {
 	eventsList = elements.NewSelectView(func(parent window.Area) window.Area {
 		return window.Rectangle(parent.TopLeft(), window.NewPoint(parent.Left(eventsListWidth), parent.OnBottom()))
 	})
+	eventsList.SetVisitedColor(termbox.ColorDarkGray)
 	eventsList.OnSelect(func(l interface{}) {
-		if p, ok := l.(Event); ok {
+		if p, ok := l.(*Event); ok {
 			selected = p
 			events.BringUp(p.id)
 			headers.BringUp(p.id)
-			mainWindow.Update(events, headers)
+			toggleEvents.SetText(getToggleEventsText(eventsList.GetNotVisited()))
+			mainWindow.Update(events, headers, mainFrame)
 		}
 	})
 	eventsList.OnChange(func() {
-		toggleEvents.SetText(getToggleEventsText(eventsList.GetLength()))
+		toggleEvents.SetText(getToggleEventsText(eventsList.GetNotVisited()))
 		if !toggleEvents.IsPressed() {
 			toggleEvents.SetCustomStyle(termbox.AttrBlink)
 		} else {
@@ -245,7 +255,10 @@ func Create(onClose func()) {
 		BG: termbox.ColorDefault,
 	})
 	logsList.OnChange(func() {
-		toggleLogs.SetText(getToggleLogsText(logsList.GetLength()))
+		if toggleLogs.IsPressed() {
+			logsList.MarkAllVisited()
+		}
+		toggleLogs.SetText(getToggleLogsText(logsList.GetNotVisited()))
 		if !toggleLogs.IsPressed() {
 			toggleLogs.SetCustomStyle(termbox.AttrBlink)
 		} else {
@@ -265,8 +278,8 @@ func Create(onClose func()) {
 	}()
 	created = true
 }
-func NewEvent(id, str string, source []byte, headers http.Header) Event {
-	return Event{
+func NewEvent(id, str string, source []byte, headers http.Header) *Event {
+	return &Event{
 		lines:   str,
 		id:      id,
 		source:  source,

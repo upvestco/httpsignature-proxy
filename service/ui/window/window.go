@@ -54,7 +54,10 @@ func (e *Window) Close() {
 
 func (e *Window) Update(list ...Drawable) {
 	for _, el := range list {
-		e.toUpdate <- el
+		select {
+		case e.toUpdate <- el:
+		default:
+		}
 	}
 }
 

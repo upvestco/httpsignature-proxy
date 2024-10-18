@@ -21,6 +21,7 @@ import (
 
 	"github.com/upvestco/httpsignature-proxy/service/ui/console"
 	"github.com/upvestco/httpsignature-proxy/service/ui/window"
+	"golang.org/x/exp/utf8string"
 
 	"github.com/nsf/termbox-go"
 )
@@ -29,19 +30,26 @@ type SelectViewItem interface {
 	String() string
 }
 
+type viewItem struct {
+	item    SelectViewItem
+	visited bool
+}
+
 type SelectView struct {
 	window.View
-	lines     []SelectViewItem
-	maxLength int
-	top       int
-	left      int
+	lines      []*viewItem
+	maxLength  int
+	top        int
+	left       int
+	notVisited int
 
 	marker int
 
-	hlColor     termbox.Attribute
-	onSelect    func(interface{})
-	onChange    func()
-	foregrounds func(selected bool, s string) ([]termbox.Attribute, termbox.Attribute)
+	hlColor      termbox.Attribute
+	visitedColor termbox.Attribute
+	onSelect     func(interface{})
+	onChange     func()
+	foregrounds  func(selected, visited bool, s string) ([]termbox.Attribute, termbox.Attribute)
 }
 
 func NewSelectView(areaTransformer window.AreaTransformer) *SelectView {
@@ -50,7 +58,7 @@ func NewSelectView(areaTransformer window.AreaTransformer) *SelectView {
 	return e
 }
 
-func (e *SelectView) InitSelectView(areaTransformer window.AreaTransformer, foregrounds func(selected bool, s string) ([]termbox.Attribute, termbox.Attribute)) {
+func (e *SelectView) InitSelectView(areaTransformer window.AreaTransformer, foregrounds func(bool, bool, string) ([]termbox.Attribute, termbox.Attribute)) {
 	e.onSelect = func(item interface{}) {
 
 	}
@@ -58,6 +66,7 @@ func (e *SelectView) InitSelectView(areaTransformer window.AreaTransformer, fore
 
 	}
 	e.hlColor = termbox.ColorCyan
+	e.visitedColor = termbox.ColorDefault
 	e.marker = -1
 	e.InitView(areaTransformer)
 	if foregrounds == nil {
@@ -65,8 +74,15 @@ func (e *SelectView) InitSelectView(areaTransformer window.AreaTransformer, fore
 	}
 	e.foregrounds = foregrounds
 }
-func (e *SelectView) GetLength() int {
+
+func (e *SelectView) SetVisitedColor(color termbox.Attribute) {
+	e.visitedColor = color
+}
+func (e *SelectView) GetSize() int {
 	return len(e.lines)
+}
+func (e *SelectView) GetNotVisited() int {
+	return e.notVisited
 }
 
 func (e *SelectView) ResetMarker() {
@@ -85,8 +101,12 @@ func (e *SelectView) add(content []SelectViewItem) {
 		if m := len(l.String()); m > maxLength {
 			maxLength = m
 		}
-		lines = append(lines, l)
+		lines = append(lines, &viewItem{
+			item:    l,
+			visited: false,
+		})
 	}
+	e.notVisited += len(content)
 	e.lines = lines
 	e.maxLength = maxLength
 	e.onChange()
@@ -110,7 +130,7 @@ func (e *SelectView) Append(content SelectViewItem) {
 	}
 	lastLine := n-1 == e.row()
 	if lastLine {
-		e.ScrollDown()
+		e.ScrollDown(false)
 	}
 }
 
@@ -132,10 +152,33 @@ func (e *SelectView) ScrollLeft() {
 	}
 }
 
+func (e *SelectView) onMouseLeft(y int) {
+	marker := y - e.GetArea().Y1
+	if marker+e.top > len(e.lines) {
+		marker = len(e.lines) - e.top - 1
+	}
+	e.marker = marker
+	e.selectItem(true)
+}
+
+func (e *SelectView) OnEnd() {
+	e.left = 0
+	height := e.GetArea().Height()
+	if len(e.lines) > height {
+		e.top = len(e.lines) - height
+		e.marker = height - 1
+	} else {
+		e.marker = len(e.lines) - 1
+	}
+	e.selectItem(true)
+
+}
+
 func (e *SelectView) Home() {
 	e.top = 0
 	e.left = 0
 	e.marker = 0
+	e.selectItem(true)
 }
 
 func (e *SelectView) ScrollRight() {
@@ -144,7 +187,7 @@ func (e *SelectView) ScrollRight() {
 	}
 }
 
-func (e *SelectView) ScrollUp() {
+func (e *SelectView) ScrollUp(visit bool) {
 	if e.marker == 0 {
 		if e.top == 0 {
 			return
@@ -154,9 +197,10 @@ func (e *SelectView) ScrollUp() {
 	} else {
 		e.marker--
 	}
-	e.onSelect(e.lines[e.row()])
+	e.selectItem(visit)
+
 }
-func (e *SelectView) ScrollDown() {
+func (e *SelectView) ScrollDown(visit bool) {
 	area := e.GetArea()
 	if e.marker == area.Height()-1 {
 		if e.top+area.Height() >= len(e.lines) {
@@ -171,9 +215,26 @@ func (e *SelectView) ScrollDown() {
 			e.marker++
 		}
 	}
-	if len(e.lines) > e.row() {
-		e.onSelect(e.lines[e.row()])
+	e.selectItem(visit)
+}
+
+func (e *SelectView) selectItem(visit bool) {
+	r := e.row()
+	if r >= 0 && r < len(e.lines) {
+		item := e.lines[r]
+		if visit && !item.visited {
+			e.notVisited--
+			item.visited = true
+		}
+		e.onSelect(item.item)
 	}
+}
+
+func (e *SelectView) MarkAllVisited() {
+	for i := 0; i < len(e.lines); i++ {
+		e.lines[i].visited = true
+	}
+	e.notVisited = 0
 }
 
 func (e *SelectView) row() int {
@@ -183,9 +244,9 @@ func (e *SelectView) row() int {
 func (e *SelectView) OnEvent(event termbox.Event) {
 	switch event.Key {
 	case termbox.KeyArrowUp:
-		e.ScrollUp()
+		e.ScrollUp(true)
 	case termbox.KeyArrowDown:
-		e.ScrollDown()
+		e.ScrollDown(true)
 	case termbox.KeyArrowLeft:
 		e.ScrollRight()
 	case termbox.KeyArrowRight:
@@ -193,24 +254,13 @@ func (e *SelectView) OnEvent(event termbox.Event) {
 	case termbox.KeyHome:
 		e.Home()
 	case termbox.KeyEnd:
-		e.left = 0
-		height := e.GetArea().Height()
-		if len(e.lines) > height {
-			e.top = len(e.lines) - height
-			e.marker = height - 1
-		} else {
-			e.marker = len(e.lines) - 1
-		}
-		e.onSelect(e.lines[e.row()])
+		e.OnEnd()
 	case termbox.MouseLeft:
-		marker := event.MouseY - e.GetArea().Y1
-		if marker+e.top > len(e.lines) {
-			marker = len(e.lines) - e.top - 1
-		}
-		e.marker = marker
-		if e.row() >= 0 && e.row() < len(e.lines) {
-			e.onSelect(e.lines[e.row()])
-		}
+		e.onMouseLeft(event.MouseY)
+	case termbox.MouseWheelUp:
+		e.ScrollDown(false)
+	case termbox.MouseWheelDown:
+		e.ScrollUp(false)
 	default:
 
 	}
@@ -227,7 +277,7 @@ func (e *SelectView) Draw(c *console.Console) {
 			continue
 		}
 		lines := e.lines[y+e.top]
-		s := lines.String()
+		s := lines.item.String()
 		if len(s) > e.left {
 			s = s[e.left:]
 		} else {
@@ -238,12 +288,12 @@ func (e *SelectView) Draw(c *console.Console) {
 		} else {
 			s += strings.Repeat(" ", width-len(s))
 		}
-		fgs, bg := e.foregrounds(y == e.marker, s)
+		fgs, bg := e.foregrounds(y == e.marker, lines.visited, s)
 		e.printLine(c, area.X1, area.Y1+y, s, fgs, bg)
 	}
 }
 
-func (e *SelectView) defaultForegrounds(selected bool, s string) ([]termbox.Attribute, termbox.Attribute) {
+func (e *SelectView) defaultForegrounds(selected, visited bool, s string) ([]termbox.Attribute, termbox.Attribute) {
 	color := e.GetColor()
 	bg := color.BG
 	m := termbox.Attribute(0)
@@ -255,14 +305,19 @@ func (e *SelectView) defaultForegrounds(selected bool, s string) ([]termbox.Attr
 		}
 	}
 	fgs := make([]termbox.Attribute, len(s))
+	fg := color.FG
+	if visited {
+		fg = e.visitedColor
+	}
 	for i := 0; i < len(s); i++ {
-		fgs[i] = color.FG | m
+		fgs[i] = fg | m
 	}
 	return fgs, bg
 }
 
 func (e *SelectView) printLine(c *console.Console, x, y int, s string, fgs []termbox.Attribute, bg termbox.Attribute) {
-	for i, r := range s {
-		c.SetCharWithAttributes(x+i, y, r, fgs[i], bg)
+	rs := utf8string.NewString(s)
+	for i := 0; i < rs.RuneCount(); i++ {
+		c.SetCharWithAttributes(x+i, y, rs.At(i), fgs[i], bg)
 	}
 }

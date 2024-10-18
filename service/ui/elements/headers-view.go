@@ -75,7 +75,7 @@ func FormatHeaders(headers http.Header) []string {
 	return items
 }
 
-func (e *HeadersView) Foregrounds(selected bool, s string) ([]termbox.Attribute, termbox.Attribute) {
+func (e *HeadersView) Foregrounds(selected, _ bool, s string) ([]termbox.Attribute, termbox.Attribute) {
 	var fgs []termbox.Attribute
 	color := e.GetColor()
 	p := strings.Index(s, ":")

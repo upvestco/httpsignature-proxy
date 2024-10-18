@@ -119,12 +119,18 @@ func (e *JSONView) OnEvent(event termbox.Event) {
 		e.ScrollLeft()
 	case termbox.KeyHome:
 		e.Home()
+	case termbox.KeySpace:
+		e.OnSpace()
 	case termbox.MouseLeft:
 		marker := event.MouseY - e.GetArea().Y1
 		if marker+e.top > len(e.lines) {
 			marker = len(e.lines) - e.top - 1
 		}
 		e.marker = marker
+	case termbox.MouseWheelUp:
+		e.ScrollDown()
+	case termbox.MouseWheelDown:
+		e.ScrollUp()
 	default:
 
 	}
@@ -139,6 +145,17 @@ func (e *JSONView) Home() {
 	e.top = 0
 	e.left = 0
 	e.marker = 0
+}
+
+func (e *JSONView) OnSpace() {
+	child := e.root.GetByRow(e.row())
+	if child != nil {
+		if child.Collapsed() {
+			e.updateData(child.Inflate(e.lines))
+		} else {
+			e.updateData(child.Collapse(e.lines))
+		}
+	}
 }
 
 func (e *JSONView) ScrollLeft() {
