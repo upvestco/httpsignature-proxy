@@ -9,7 +9,7 @@ jobs:
   test:
     strategy:
       matrix:
-        go-version: [ 1.21.4 ]
+        go-version: [ 1.22.2 ]
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10

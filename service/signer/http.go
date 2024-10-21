@@ -20,8 +20,8 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+	"github.com/upvestco/httpsignature-proxy/service/logger"
 
-	"github.com/upvestco/httpsignature-proxy/service/signer/logger"
 	"github.com/upvestco/httpsignature-proxy/service/signer/request"
 )
 
@@ -43,6 +43,7 @@ func NewTransport(inner http.RoundTripper, signer request.Signer, signingKey req
 		inner:      inner,
 		signer:     signer,
 		signingKey: signingKey,
+		log:        log,
 	}
 }
 

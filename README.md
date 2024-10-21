@@ -1,6 +1,6 @@
 # httpsignature-proxy
 
-Localhost HTTP Signatures proxy.
+Localhost HTTP Signatures proxy and webhook events listener.
 
 The Upvest Investment API requires you to
 use [HTTP Signatures](https://tools.ietf.org/id/draft-ietf-httpbis-message-signatures-01.html)
@@ -10,7 +10,7 @@ well as ensure the request hasn't been tampered with on the way.
 This is good for security but can be cumbersome while developing. That's why
 this tool exists. You run it locally on your dev machine and use the localhost
 port in your Postman, Insomnia, etc. tool to make your calls to the Upvest
-Sandbox.
+Sandbox amd be able to see incoming webhook events.
 
 ## Installation
 
@@ -45,12 +45,16 @@ Usage:
 Flags:
   -h, --help                          help for start
   -p, --port int                      port to start server
-  -v  --verbose-mode bool             enables verbose mode for proxy
+  -v  --verbose-mode bool             enables verbose mode for proxy (not recommended to use with -l flag)
   -f, --private-key string            filename of the private key file
   -P, --private-key-password string   password of the private key
   -s, --server-base-url string        server base URL to pipe the requests to
   -i, --key-id string                 key id for specified private key
   -c, --client-id string              client id for specified private key
+  -l, --listen                        create webhook events tunel and log incomming events to console
+  -e  --events strings                only with -l flag. Log only events of the specified types
+      --show-webhook-headers          only with -l flag. Show http headers coming with webhook events
+      --ui                            enable Shell UI mode
 
 Global Flags:
       --config string   config file (default is $HOME/.httpsignature-proxy.yaml)
@@ -83,7 +87,7 @@ rm ./ec-priv-key.pem
 
 Extract public key from private:
 
-```
+```shell
 openssl ec -in ./ec-encr-priv-key.pem -pubout > ec-pub-key.pem
 ```
 
