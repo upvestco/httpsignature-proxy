@@ -19,7 +19,7 @@ package window
 import (
 	"github.com/upvestco/httpsignature-proxy/service/ui/console"
 
-	"github.com/nsf/termbox-go"
+	tb "github.com/nsf/termbox-go"
 )
 
 type FrameStyle struct {
@@ -56,7 +56,7 @@ type AreaTransformer func(Area) Area
 
 type Drawable interface {
 	Draw(c *console.Console)
-	OnEvent(event termbox.Event)
+	OnEvent(event tb.Event)
 	OnResize()
 	GetArea() Area
 
@@ -81,5 +81,5 @@ type ButtonStyle struct {
 	TextColor     *Color
 	FrameColor    *Color
 	FrameStyle    *FrameStyle
-	TextAttribute termbox.Attribute
+	TextAttribute tb.Attribute
 }

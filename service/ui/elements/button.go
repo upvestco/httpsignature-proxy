@@ -22,7 +22,7 @@ import (
 	"github.com/upvestco/httpsignature-proxy/service/ui/console"
 	"github.com/upvestco/httpsignature-proxy/service/ui/window"
 
-	"github.com/nsf/termbox-go"
+	tb "github.com/nsf/termbox-go"
 )
 
 var noOp = func() {
@@ -34,7 +34,7 @@ type Button struct {
 	text          string
 	pressedStyle  window.ButtonStyle
 	releasedStyle window.ButtonStyle
-	customStyle   termbox.Attribute
+	customStyle   tb.Attribute
 	onPress       func()
 	onRelease     func()
 }
@@ -51,7 +51,7 @@ func NewButton(mw *window.Window, text string, area window.AreaTransformer) *But
 	return e
 }
 
-func (e *Button) SetCustomStyle(customStyle termbox.Attribute) {
+func (e *Button) SetCustomStyle(customStyle tb.Attribute) {
 	e.customStyle = customStyle
 }
 
@@ -96,13 +96,13 @@ func (e *Button) GetText() string {
 	return e.text
 }
 
-func (e *Button) OnEvent(event termbox.Event) {
+func (e *Button) OnEvent(event tb.Event) {
 	switch event.Type {
-	case termbox.EventMouse:
+	case tb.EventMouse:
 		switch event.Key {
-		case termbox.MouseLeft:
+		case tb.MouseLeft:
 			e.Press()
-		case termbox.MouseRelease:
+		case tb.MouseRelease:
 			e.Release()
 		default:
 		}
@@ -115,7 +115,7 @@ func (e *Button) Draw(c *console.Console) {
 	printButton(c, e.GetArea(), e.pressed, e.pressedStyle, e.releasedStyle, e.text, e.customStyle)
 }
 
-func printButton(c *console.Console, area window.Area, pressed bool, prStyle, relStyle window.ButtonStyle, text string, customStyle termbox.Attribute) {
+func printButton(c *console.Console, area window.Area, pressed bool, prStyle, relStyle window.ButtonStyle, text string, customStyle tb.Attribute) {
 	style := relStyle
 	if pressed {
 		style = prStyle

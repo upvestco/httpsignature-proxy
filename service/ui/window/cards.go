@@ -19,7 +19,7 @@ package window
 import (
 	"github.com/upvestco/httpsignature-proxy/service/ui/console"
 
-	"github.com/nsf/termbox-go"
+	tb "github.com/nsf/termbox-go"
 )
 
 func CreateCards(area AreaTransformer) *Cards {
@@ -82,7 +82,7 @@ func (e *Cards) BringUp(id string) {
 	}
 }
 
-func (e *Cards) OnEvent(event termbox.Event) {
+func (e *Cards) OnEvent(event tb.Event) {
 	if !e.View.IsEnabled() {
 		return
 	}

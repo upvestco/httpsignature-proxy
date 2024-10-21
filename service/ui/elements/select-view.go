@@ -23,7 +23,7 @@ import (
 	"github.com/upvestco/httpsignature-proxy/service/ui/window"
 	"golang.org/x/exp/utf8string"
 
-	"github.com/nsf/termbox-go"
+	tb "github.com/nsf/termbox-go"
 )
 
 type SelectViewItem interface {
@@ -45,11 +45,11 @@ type SelectView struct {
 
 	marker int
 
-	hlColor      termbox.Attribute
-	visitedColor termbox.Attribute
+	hlColor      tb.Attribute
+	visitedColor tb.Attribute
 	onSelect     func(interface{})
 	onChange     func()
-	foregrounds  func(selected, visited bool, s string) ([]termbox.Attribute, termbox.Attribute)
+	foregrounds  func(selected, visited bool, s string) ([]tb.Attribute, tb.Attribute)
 }
 
 func NewSelectView(areaTransformer window.AreaTransformer) *SelectView {
@@ -58,15 +58,15 @@ func NewSelectView(areaTransformer window.AreaTransformer) *SelectView {
 	return e
 }
 
-func (e *SelectView) InitSelectView(areaTransformer window.AreaTransformer, foregrounds func(bool, bool, string) ([]termbox.Attribute, termbox.Attribute)) {
+func (e *SelectView) InitSelectView(areaTransformer window.AreaTransformer, foregrounds func(bool, bool, string) ([]tb.Attribute, tb.Attribute)) {
 	e.onSelect = func(item interface{}) {
 
 	}
 	e.onChange = func() {
 
 	}
-	e.hlColor = termbox.ColorCyan
-	e.visitedColor = termbox.ColorDefault
+	e.hlColor = tb.ColorCyan
+	e.visitedColor = tb.ColorDefault
 	e.marker = -1
 	e.InitView(areaTransformer)
 	if foregrounds == nil {
@@ -75,7 +75,7 @@ func (e *SelectView) InitSelectView(areaTransformer window.AreaTransformer, fore
 	e.foregrounds = foregrounds
 }
 
-func (e *SelectView) SetVisitedColor(color termbox.Attribute) {
+func (e *SelectView) SetVisitedColor(color tb.Attribute) {
 	e.visitedColor = color
 }
 func (e *SelectView) GetSize() int {
@@ -90,7 +90,7 @@ func (e *SelectView) ResetMarker() {
 	e.top = 0
 }
 
-func (e *SelectView) SetHighlightColor(hlColor termbox.Attribute) {
+func (e *SelectView) SetHighlightColor(hlColor tb.Attribute) {
 	e.hlColor = hlColor
 }
 
@@ -241,25 +241,25 @@ func (e *SelectView) row() int {
 	return e.top + e.marker
 }
 
-func (e *SelectView) OnEvent(event termbox.Event) {
+func (e *SelectView) OnEvent(event tb.Event) {
 	switch event.Key {
-	case termbox.KeyArrowUp:
+	case tb.KeyArrowUp:
 		e.ScrollUp(true)
-	case termbox.KeyArrowDown:
+	case tb.KeyArrowDown:
 		e.ScrollDown(true)
-	case termbox.KeyArrowLeft:
+	case tb.KeyArrowLeft:
 		e.ScrollRight()
-	case termbox.KeyArrowRight:
+	case tb.KeyArrowRight:
 		e.ScrollLeft()
-	case termbox.KeyHome:
+	case tb.KeyHome:
 		e.Home()
-	case termbox.KeyEnd:
+	case tb.KeyEnd:
 		e.OnEnd()
-	case termbox.MouseLeft:
+	case tb.MouseLeft:
 		e.onMouseLeft(event.MouseY)
-	case termbox.MouseWheelUp:
+	case tb.MouseWheelUp:
 		e.ScrollDown(false)
-	case termbox.MouseWheelDown:
+	case tb.MouseWheelDown:
 		e.ScrollUp(false)
 	default:
 
@@ -307,18 +307,18 @@ func (e *SelectView) Draw(c *console.Console) {
 	}
 }
 
-func (e *SelectView) defaultForegrounds(selected, visited bool, s string) ([]termbox.Attribute, termbox.Attribute) {
+func (e *SelectView) defaultForegrounds(selected, visited bool, s string) ([]tb.Attribute, tb.Attribute) {
 	color := e.GetColor()
 	bg := color.BG
-	m := termbox.Attribute(0)
+	m := tb.Attribute(0)
 	if selected {
 		if e.HasFocus() {
 			bg = e.hlColor
 		} else {
-			m = termbox.AttrBold
+			m = tb.AttrBold
 		}
 	}
-	fgs := make([]termbox.Attribute, len(s))
+	fgs := make([]tb.Attribute, len(s))
 	fg := color.FG
 	if visited {
 		fg = e.visitedColor
@@ -329,7 +329,7 @@ func (e *SelectView) defaultForegrounds(selected, visited bool, s string) ([]ter
 	return fgs, bg
 }
 
-func (e *SelectView) printLine(c *console.Console, x, y int, s string, fgs []termbox.Attribute, bg termbox.Attribute) {
+func (e *SelectView) printLine(c *console.Console, x, y int, s string, fgs []tb.Attribute, bg tb.Attribute) {
 	rs := utf8string.NewString(s)
 	for i := 0; i < rs.RuneCount(); i++ {
 		c.SetCharWithAttributes(x+i, y, rs.At(i), fgs[i], bg)

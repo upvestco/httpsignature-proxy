@@ -140,8 +140,6 @@ func startProxy() {
 		fmt.Printf("  - Piping all requests to %s\n", keyConfigs[i].BaseUrl)
 	}
 
-	r := runtime.NewRuntime(cfg, signerConfigs)
-	r.Run()
 }
 
 func fatalConfigError(keyConfig config.KeyConfig, err error) {

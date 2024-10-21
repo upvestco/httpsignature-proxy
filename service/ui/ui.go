@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/nsf/termbox-go"
+	tb "github.com/nsf/termbox-go"
 	"github.com/upvestco/httpsignature-proxy/service/logger"
 	"github.com/upvestco/httpsignature-proxy/service/ui/elements"
 	"github.com/upvestco/httpsignature-proxy/service/ui/window"
@@ -82,7 +82,7 @@ func AddPayload(payload PullItem) {
 		eventsList.Append(event)
 
 		hdr := elements.NewHeadersView(window.WholeArea())
-		hdr.SetKeyColor(termbox.ColorLightBlue)
+		hdr.SetKeyColor(tb.ColorLightBlue)
 		hdr.SetHeaders(payload.Headers)
 		headers.Insert(id, hdr)
 	}
@@ -101,7 +101,7 @@ func Close() {
 }
 
 func Create(onClose func()) {
-	mainWindow = window.New(termbox.ColorGreen, termbox.ColorDefault)
+	mainWindow = window.New(tb.ColorGreen, tb.ColorDefault)
 	mainFrame := elements.NewFrame(window.WholeArea(), window.NormalFrameStyle)
 	mainWindow.Add(mainFrame)
 
@@ -175,7 +175,7 @@ func Create(onClose func()) {
 	eventsList = elements.NewSelectView(func(parent window.Area) window.Area {
 		return window.Rectangle(parent.TopLeft(), window.NewPoint(parent.Left(eventsListWidth), parent.OnBottom()))
 	})
-	eventsList.SetVisitedColor(termbox.ColorDarkGray)
+	eventsList.SetVisitedColor(tb.ColorDarkGray)
 	eventsList.OnSelect(func(l interface{}) {
 		if p, ok := l.(*Event); ok {
 			selected = p
@@ -188,7 +188,7 @@ func Create(onClose func()) {
 	eventsList.OnChange(func() {
 		toggleEvents.SetText(getToggleEventsText(eventsList.GetNotVisited()))
 		if !toggleEvents.IsPressed() {
-			toggleEvents.SetCustomStyle(termbox.AttrBlink)
+			toggleEvents.SetCustomStyle(tb.AttrBlink)
 		} else {
 			toggleLogs.SetCustomStyle(0)
 		}
@@ -243,8 +243,8 @@ func Create(onClose func()) {
 
 	logsList = elements.NewSelectView(window.WholeArea())
 	logsList.SetColor(window.Color{
-		FG: termbox.ColorDefault,
-		BG: termbox.ColorDefault,
+		FG: tb.ColorDefault,
+		BG: tb.ColorDefault,
 	})
 	logsList.OnChange(func() {
 		if toggleLogs.IsPressed() {
@@ -252,7 +252,7 @@ func Create(onClose func()) {
 		}
 		toggleLogs.SetText(getToggleLogsText(logsList.GetNotVisited()))
 		if !toggleLogs.IsPressed() {
-			toggleLogs.SetCustomStyle(termbox.AttrBlink)
+			toggleLogs.SetCustomStyle(tb.AttrBlink)
 		} else {
 			toggleLogs.SetCustomStyle(0)
 		}
@@ -300,7 +300,7 @@ func Create(onClose func()) {
 	toggleLogs.Press()
 
 	go func() {
-		mainWindow.Run(termbox.KeyCtrlC)
+		mainWindow.Run(tb.KeyCtrlC)
 		onClose()
 	}()
 	created = true

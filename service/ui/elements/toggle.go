@@ -19,7 +19,7 @@ package elements
 import (
 	"github.com/upvestco/httpsignature-proxy/service/ui/window"
 
-	"github.com/nsf/termbox-go"
+	tb "github.com/nsf/termbox-go"
 )
 
 type Toggle struct {
@@ -38,11 +38,11 @@ func NewToggle(mw *window.Window, text string, areaTransformer window.AreaTransf
 	return e
 }
 
-func (e *Toggle) OnEvent(event termbox.Event) {
+func (e *Toggle) OnEvent(event tb.Event) {
 	switch event.Type {
-	case termbox.EventMouse:
+	case tb.EventMouse:
 		switch event.Key {
-		case termbox.MouseLeft:
+		case tb.MouseLeft:
 			e.pressed = !e.pressed
 			if e.pressed {
 				e.Press()
@@ -51,9 +51,9 @@ func (e *Toggle) OnEvent(event termbox.Event) {
 			}
 		default:
 		}
-	case termbox.EventKey:
+	case tb.EventKey:
 		switch event.Key {
-		case termbox.KeySpace:
+		case tb.KeySpace:
 			e.pressed = !e.pressed
 			if e.pressed {
 				e.Press()

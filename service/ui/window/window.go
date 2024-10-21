@@ -17,7 +17,7 @@ limitations under the License.
 package window
 
 import (
-	"github.com/nsf/termbox-go"
+	tb "github.com/nsf/termbox-go"
 	"github.com/upvestco/httpsignature-proxy/service/ui/console"
 )
 
@@ -28,7 +28,7 @@ type Window struct {
 	width, height int
 }
 
-func New(fg, bg termbox.Attribute) *Window {
+func New(fg, bg tb.Attribute) *Window {
 	e := &Window{
 		C:        console.Create(fg, bg),
 		toUpdate: make(chan Drawable, 10),
@@ -69,7 +69,7 @@ func (e *Window) Size() (int, int) {
 	return e.C.Size()
 }
 
-func (e *Window) Run(exitKey termbox.Key) {
+func (e *Window) Run(exitKey tb.Key) {
 
 	e.width, e.height = e.C.Size()
 	active := getSelected(e, 0, 0)
@@ -78,11 +78,11 @@ func (e *Window) Run(exitKey termbox.Key) {
 	}
 	e.repaint(e)
 	e.C.Update()
-	eventCh := make(chan termbox.Event, 10)
+	eventCh := make(chan tb.Event, 10)
 
 	go func() {
 		for {
-			eventCh <- termbox.PollEvent()
+			eventCh <- tb.PollEvent()
 		}
 	}()
 
@@ -94,7 +94,7 @@ func (e *Window) Run(exitKey termbox.Key) {
 		case ev := <-eventCh:
 
 			switch ev.Type {
-			case termbox.EventKey:
+			case tb.EventKey:
 				switch ev.Key {
 				case exitKey:
 					return
@@ -104,9 +104,9 @@ func (e *Window) Run(exitKey termbox.Key) {
 					active.OnEvent(ev)
 					active.Draw(e.C)
 				}
-			case termbox.EventMouse:
+			case tb.EventMouse:
 				switch ev.Key {
-				case termbox.MouseLeft:
+				case tb.MouseLeft:
 					selected := getSelected(e, ev.MouseX, ev.MouseY)
 					if selected == nil {
 						if active != nil {
@@ -128,7 +128,7 @@ func (e *Window) Run(exitKey termbox.Key) {
 					active.OnEvent(ev)
 					active.Draw(e.C)
 				}
-			case termbox.EventResize:
+			case tb.EventResize:
 				e.height = ev.Height
 				e.width = ev.Width
 				e.resize(e)
@@ -179,11 +179,11 @@ func (e *Window) repaint(v Drawable) {
 }
 
 type Color struct {
-	FG termbox.Attribute
-	BG termbox.Attribute
+	FG tb.Attribute
+	BG tb.Attribute
 }
 
-func NewColor(fg termbox.Attribute, bg termbox.Attribute) Color {
+func NewColor(fg tb.Attribute, bg tb.Attribute) Color {
 	return Color{
 		FG: fg,
 		BG: bg,
@@ -204,9 +204,9 @@ func (e *Window) DefaultButtonStyle(pressed bool) ButtonStyle {
 		FrameColor: &dc,
 	}
 	if pressed {
-		style.TextAttribute = termbox.AttrBold
+		style.TextAttribute = tb.AttrBold
 	} else {
-		style.TextAttribute = termbox.Attribute(0)
+		style.TextAttribute = tb.Attribute(0)
 	}
 	return style
 }

@@ -19,7 +19,7 @@ package window
 import (
 	"github.com/upvestco/httpsignature-proxy/service/ui/console"
 
-	"github.com/nsf/termbox-go"
+	tb "github.com/nsf/termbox-go"
 )
 
 var _ Drawable = &View{}
@@ -123,6 +123,6 @@ func (e *View) IsEnabled() bool {
 	return e.enabled
 }
 
-func (e *View) OnEvent(_ termbox.Event) {
+func (e *View) OnEvent(_ tb.Event) {
 
 }

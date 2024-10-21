@@ -24,13 +24,13 @@ import (
 
 	"github.com/upvestco/httpsignature-proxy/service/ui/window"
 
-	"github.com/nsf/termbox-go"
+	tb "github.com/nsf/termbox-go"
 )
 
 type HeadersView struct {
 	SelectView
-	keyColor   termbox.Attribute
-	valueColor termbox.Attribute
+	keyColor   tb.Attribute
+	valueColor tb.Attribute
 }
 
 func NewHeadersView(areaTransformer window.AreaTransformer) *HeadersView {
@@ -39,11 +39,11 @@ func NewHeadersView(areaTransformer window.AreaTransformer) *HeadersView {
 	return e
 }
 
-func (e *HeadersView) SetKeyColor(color termbox.Attribute) {
+func (e *HeadersView) SetKeyColor(color tb.Attribute) {
 	e.keyColor = color
 }
 
-func (e *HeadersView) SetValueColor(color termbox.Attribute) {
+func (e *HeadersView) SetValueColor(color tb.Attribute) {
 	e.valueColor = color
 }
 
@@ -75,13 +75,13 @@ func FormatHeaders(headers http.Header) []string {
 	return items
 }
 
-func (e *HeadersView) Foregrounds(selected, _ bool, s string) ([]termbox.Attribute, termbox.Attribute) {
-	var fgs []termbox.Attribute
+func (e *HeadersView) Foregrounds(selected, _ bool, s string) ([]tb.Attribute, tb.Attribute) {
+	var fgs []tb.Attribute
 	color := e.GetColor()
 	p := strings.Index(s, ":")
-	m := termbox.Attribute(0)
+	m := tb.Attribute(0)
 	if selected {
-		m = termbox.AttrBold
+		m = tb.AttrBold
 	}
 	for i := 0; i < len(s); i++ {
 		if i < p {

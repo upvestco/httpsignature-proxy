@@ -24,7 +24,7 @@ import (
 	"github.com/upvestco/httpsignature-proxy/service/ui/console"
 	"github.com/upvestco/httpsignature-proxy/service/ui/window"
 
-	"github.com/nsf/termbox-go"
+	tb "github.com/nsf/termbox-go"
 )
 
 var (
@@ -35,12 +35,12 @@ var (
 )
 
 type ColorJSONScheme struct {
-	KeyColor          termbox.Attribute
-	KeyObjectColor    termbox.Attribute
-	ValueColor        termbox.Attribute
-	TagColor          termbox.Attribute
-	ColonColor        termbox.Attribute
-	CollapseSignColor termbox.Attribute
+	KeyColor          tb.Attribute
+	KeyObjectColor    tb.Attribute
+	ValueColor        tb.Attribute
+	TagColor          tb.Attribute
+	ColonColor        tb.Attribute
+	CollapseSignColor tb.Attribute
 }
 
 type JSONView struct {
@@ -53,26 +53,26 @@ type JSONView struct {
 	marker    int
 
 	jsonColors ColorJSONScheme
-	hlColor    termbox.Attribute
+	hlColor    tb.Attribute
 }
 
 func DefaultColorJSONScheme() ColorJSONScheme {
 	return ColorJSONScheme{
-		KeyColor:          termbox.ColorLightBlue,
-		KeyObjectColor:    termbox.ColorBlue,
-		ValueColor:        termbox.ColorYellow,
-		TagColor:          termbox.ColorCyan,
-		ColonColor:        termbox.ColorWhite,
-		CollapseSignColor: termbox.ColorLightRed | termbox.AttrBold,
+		KeyColor:          tb.ColorLightBlue,
+		KeyObjectColor:    tb.ColorBlue,
+		ValueColor:        tb.ColorYellow,
+		TagColor:          tb.ColorCyan,
+		ColonColor:        tb.ColorWhite,
+		CollapseSignColor: tb.ColorLightRed | tb.AttrBold,
 	}
 }
 
-func (e *JSONView) SetHighlightColor(hlColor termbox.Attribute) {
+func (e *JSONView) SetHighlightColor(hlColor tb.Attribute) {
 	e.hlColor = hlColor
 }
 func NewJSONView(areaTransformer window.AreaTransformer) *JSONView {
 	e := &JSONView{
-		hlColor:    termbox.ColorCyan,
+		hlColor:    tb.ColorCyan,
 		jsonColors: DefaultColorJSONScheme(),
 	}
 	e.InitView(areaTransformer)
@@ -107,29 +107,29 @@ func (e *JSONView) WithColorJSONScheme(jsonColors ColorJSONScheme) *JSONView {
 	return e
 }
 
-func (e *JSONView) OnEvent(event termbox.Event) {
+func (e *JSONView) OnEvent(event tb.Event) {
 	switch event.Key {
-	case termbox.KeyArrowUp:
+	case tb.KeyArrowUp:
 		e.ScrollUp()
-	case termbox.KeyArrowDown:
+	case tb.KeyArrowDown:
 		e.ScrollDown()
-	case termbox.KeyArrowLeft:
+	case tb.KeyArrowLeft:
 		e.ScrollRight()
-	case termbox.KeyArrowRight:
+	case tb.KeyArrowRight:
 		e.ScrollLeft()
-	case termbox.KeyHome:
+	case tb.KeyHome:
 		e.Home()
-	case termbox.KeySpace:
+	case tb.KeySpace:
 		e.OnSpace()
-	case termbox.MouseLeft:
+	case tb.MouseLeft:
 		marker := event.MouseY - e.GetArea().Y1
 		if marker+e.top > len(e.lines) {
 			marker = len(e.lines) - e.top - 1
 		}
 		e.marker = marker
-	case termbox.MouseWheelUp:
+	case tb.MouseWheelUp:
 		e.ScrollDown()
-	case termbox.MouseWheelDown:
+	case tb.MouseWheelDown:
 		e.ScrollUp()
 	default:
 
@@ -249,20 +249,20 @@ func (e *JSONView) Draw(c *console.Console) {
 	}
 }
 
-func (e *JSONView) PrintLine(c *console.Console, x, y int, s string, fgs []termbox.Attribute, bg termbox.Attribute) {
+func (e *JSONView) PrintLine(c *console.Console, x, y int, s string, fgs []tb.Attribute, bg tb.Attribute) {
 	for i, r := range s {
 		c.SetCharWithAttributes(x+i, y, r, fgs[i], bg)
 	}
 }
 
-func (e *JSONView) highlight(s string) []termbox.Attribute {
+func (e *JSONView) highlight(s string) []tb.Attribute {
 	type cs struct {
 		start  int
 		finish int
 	}
 	var css []cs
 
-	fgs := make([]termbox.Attribute, len(s))
+	fgs := make([]tb.Attribute, len(s))
 	hasColon := false
 	inCommas := false
 	objectStart := false
