@@ -19,20 +19,20 @@ package console
 import (
 	"fmt"
 
-	"github.com/nsf/termbox-go"
+	tb "github.com/nsf/termbox-go"
 	"golang.design/x/clipboard"
 )
 
 type Console struct {
-	fg termbox.Attribute
-	bg termbox.Attribute
+	fg tb.Attribute
+	bg tb.Attribute
 }
 
 func (c *Console) Size() (int, int) {
-	return termbox.Size()
+	return tb.Size()
 }
 
-func Create(fg, bg termbox.Attribute) *Console {
+func Create(fg, bg tb.Attribute) *Console {
 
 	err := clipboard.Init()
 	if err != nil {
@@ -40,11 +40,11 @@ func Create(fg, bg termbox.Attribute) *Console {
 		panic(err)
 	}
 
-	if err := termbox.Init(); err != nil {
+	if err := tb.Init(); err != nil {
 		fmt.Println(err)
 		panic(err)
 	}
-	termbox.SetInputMode(termbox.InputMouse)
+	tb.SetInputMode(tb.InputMouse)
 
 	c := &Console{
 		fg: fg,
@@ -54,44 +54,44 @@ func Create(fg, bg termbox.Attribute) *Console {
 	return c
 }
 
-func (c *Console) Background() termbox.Attribute {
+func (c *Console) Background() tb.Attribute {
 	return c.bg
 }
-func (c *Console) Foreground() termbox.Attribute {
+func (c *Console) Foreground() tb.Attribute {
 	return c.fg
 }
 
 func (c *Console) Update() {
-	_ = termbox.Flush()
+	_ = tb.Flush()
 }
 
 func (c *Console) Clear() {
-	_ = termbox.Clear(c.fg, c.bg)
+	_ = tb.Clear(c.fg, c.bg)
 }
 
 func (c *Console) Close() {
-	termbox.Close()
+	tb.Close()
 }
 
-func (c *Console) PrintStringWithAttributes(x, y int, s string, bg, fg termbox.Attribute) {
+func (c *Console) PrintStringWithAttributes(x, y int, s string, bg, fg tb.Attribute) {
 	for i, r := range s {
 		c.SetCharWithAttributes(x+i, y, r, fg, bg)
 	}
 }
 
-func (c *Console) PrintRepeatWithAttributes(x, y int, s rune, n int, fg, bg termbox.Attribute) {
+func (c *Console) PrintRepeatWithAttributes(x, y int, s rune, n int, fg, bg tb.Attribute) {
 	for i := 0; i < n; i++ {
 		c.SetCharWithAttributes(x+i, y, s, fg, bg)
 	}
 }
 
-func (c *Console) SetCharWithAttributes(x, y int, r rune, fg, bg termbox.Attribute) {
-	termbox.SetCell(x, y, r, fg, bg)
+func (c *Console) SetCharWithAttributes(x, y int, r rune, fg, bg tb.Attribute) {
+	tb.SetCell(x, y, r, fg, bg)
 }
 
 func (c *Console) PrintString(x, y int, s string) {
 	for i, r := range s {
-		termbox.SetChar(x+i, y, r)
+		tb.SetChar(x+i, y, r)
 	}
 }
 
@@ -100,5 +100,5 @@ func (c *Console) GetChar(x, y int) rune {
 	if x >= w || y >= h {
 		return 0
 	}
-	return termbox.GetCell(x, y).Ch
+	return tb.GetCell(x, y).Ch
 }
