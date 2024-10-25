@@ -52,7 +52,7 @@ func IsCreated() bool {
 	return created
 }
 
-func AddPayload(payload PullItem) {
+func AddPayload(payload PullItem, filter map[string]interface{}) {
 	if !created {
 		return
 	}
@@ -62,6 +62,12 @@ func AddPayload(payload PullItem) {
 		return
 	}
 	for i, ev := range in.Payload {
+		if len(filter) > 0 {
+			if _, ok := filter[strings.ToLower(ev.Type)]; !ok {
+				continue
+			}
+		}
+
 		id := uuid.NewString()
 
 		v := elements.NewJSONView(window.WholeArea())

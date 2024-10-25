@@ -61,7 +61,7 @@ func createTunnel(apiClient ApiClient, events []string, logHeaders bool, logger 
 		if len(t) == 0 {
 			continue
 		}
-		eventsFilter[t] = 1
+		eventsFilter[strings.ToLower(t)] = 1
 	}
 
 	return &tunnel{
@@ -114,29 +114,34 @@ func (e *tunnel) pullEvents(ctx context.Context, endpointID string) error {
 	}
 
 	for _, item := range items {
-		ui.AddPayload(item)
 		if ui.IsCreated() {
-			continue
+			ui.AddPayload(item, e.eventsFilter)
+		} else {
+			e.consoleLog(item)
 		}
-		formatted, origLen, filteredLen := e.filterAndFormat(item.Payload)
-		if filteredLen == 0 {
-			continue
-		}
-		filtered := origLen != filteredLen
-
-		e.logger.PrintLn(cyan("== new webhook event received == "))
-		e.logger.PrintLn(cyan("== received at: %s", item.CreatedAt.Format(time.DateTime)))
-		if e.logHeaders {
-			e.printHeaders(item, filtered)
-		}
-		payloadMessage := ""
-		if filtered {
-			payloadMessage += fmt.Sprintf(" was filtered: origin events: %d, filtered events: %d)", origLen, filteredLen)
-		}
-		e.logger.PrintLn(cyan(payloadMessage))
-		e.logger.PrintLn(formatted)
 	}
 	return nil
+}
+
+func (e *tunnel) consoleLog(item ui.PullItem) {
+	formatted, origLen, filteredLen := e.filterAndFormat(item.Payload)
+	if filteredLen == 0 {
+		return
+	}
+	filtered := origLen != filteredLen
+
+	e.logger.PrintLn(cyan("== new webhook event received == "))
+	e.logger.PrintLn(cyan("== received at: %s", item.CreatedAt.Format(time.DateTime)))
+	if e.logHeaders {
+		e.printHeaders(item, filtered)
+	}
+	payloadMessage := ""
+	if filtered {
+		payloadMessage += fmt.Sprintf(" was filtered: origin events: %d, filtered events: %d)", origLen, filteredLen)
+	}
+	e.logger.PrintLn(cyan(payloadMessage))
+	e.logger.PrintLn(formatted)
+
 }
 
 func (e *tunnel) filterAndFormat(payload string) (string, int, int) {
@@ -188,7 +193,7 @@ func (e *tunnel) filterPayload(in ui.Payload) ui.Payload {
 		return in
 	}
 	for _, event := range in.Payload {
-		if _, exists := e.eventsFilter[event.Type]; exists {
+		if _, exists := e.eventsFilter[strings.ToLower(event.Type)]; exists {
 			out.Payload = append(out.Payload, event)
 		}
 	}
