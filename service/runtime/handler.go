@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -28,10 +27,11 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/upvestco/httpsignature-proxy/service/logger"
+	"github.com/upvestco/httpsignature-proxy/service/signer"
+	"github.com/upvestco/httpsignature-proxy/service/tunnels"
 
 	"github.com/upvestco/httpsignature-proxy/config"
-	"github.com/upvestco/httpsignature-proxy/service/signer"
-	"github.com/upvestco/httpsignature-proxy/service/signer/logger"
 	"github.com/upvestco/httpsignature-proxy/service/signer/material"
 	"github.com/upvestco/httpsignature-proxy/service/signer/request"
 )
@@ -50,30 +50,32 @@ var (
 )
 
 type Handler struct {
-	signerConfigs map[string]SignerConfig
-	cfg           *config.Config
-	requestSigner request.Signer
-	log           logger.Logger
+	signerConfigs     map[string]SignerConfig
+	cfg               *config.Config
+	requestSigner     request.Signer
+	log               logger.Logger
+	userCredentialsCh chan tunnels.UserCredentials
 }
 
-func newHandler(cfg *config.Config, signerConfigs map[string]SignerConfig, log logger.Logger) *Handler {
+func newHandler(cfg *config.Config, signerConfigs map[string]SignerConfig, userCredentialsCh chan tunnels.UserCredentials, log logger.Logger) *Handler {
 	return &Handler{
-		cfg:           cfg,
-		log:           log,
-		requestSigner: request.New(log),
-		signerConfigs: signerConfigs,
+		cfg:               cfg,
+		log:               log,
+		requestSigner:     request.New(log),
+		signerConfigs:     signerConfigs,
+		userCredentialsCh: userCredentialsCh,
 	}
 }
 
 func (h *Handler) writeResponse(rw http.ResponseWriter, code int, headers map[string][]string, resp []byte) {
-	excludedHeaders := map[string]struct{}{
+	excludedOutputHeaders := map[string]struct{}{
 		material.SignatureHeader:      {},
 		material.SignatureInputHeader: {},
 		"Host":                        {},
 	}
 
 	for name, values := range headers {
-		if _, ok := excludedHeaders[name]; ok {
+		if _, ok := excludedOutputHeaders[name]; ok {
 			continue
 		}
 		for _, val := range values {
@@ -105,23 +107,23 @@ func (h *Handler) writeError(rw http.ResponseWriter, code int, err error) {
 	}
 }
 
-func (h *Handler) copyHeaders(in *http.Request, out *http.Request) {
+func (h *Handler) copyHeaders(in *http.Request, out *http.Request, ll logger.Logger) {
 	for headerName, value := range in.Header {
 		if h.excludeHeader(headerName) {
 			continue
 		}
 		out.Header.Add(headerName, strings.Join(value, ","))
 	}
-	h.log.Log(" - Headers that will be excluded if presented:\n")
+	ll.Log(" - Headers that will be excluded if presented:")
 	for _, excludedHeader := range excludedHeaders {
-		h.log.LogF("   - %s:\n", excludedHeader)
+		ll.LogF("   - %s:", excludedHeader)
 	}
 }
 
-func (h *Handler) addRequiredHeaders(req *http.Request) {
+func (h *Handler) addRequiredHeaders(req *http.Request, ll logger.Logger) {
 	if res := req.Header.Get(acceptHeader); res == "" {
 		req.Header.Add(acceptHeader, `*/*`)
-		fmt.Printf(" - Header '%s' added with value '%s'\n", acceptHeader, `*/*`)
+		ll.LogF(" - Header '%s' added with value '%s'", acceptHeader, `*/*`)
 	}
 }
 
@@ -135,20 +137,20 @@ func (h *Handler) excludeHeader(headerName string) bool {
 	return false
 }
 
-func (h *Handler) getSignerConfig(clientID string) (SignerConfig, error) {
+func (h *Handler) getSignerConfig(clientID string, ll logger.Logger) (SignerConfig, error) {
 	signerCfg, ok := h.signerConfigs[clientID]
 	if !ok {
-		return h.getDefaultSigner()
+		return h.getDefaultSigner(ll)
 	}
-	h.log.LogF(" - Used signer for clientID %s\n", clientID)
+	ll.LogF(" - Used signer for clientID %s", clientID)
 	return signerCfg, nil
 }
-func (h *Handler) getDefaultSigner() (SignerConfig, error) {
+func (h *Handler) getDefaultSigner(ll logger.Logger) (SignerConfig, error) {
 	signerCfg, ok := h.signerConfigs[config.DefaultClientKey]
 	if !ok {
 		return SignerConfig{}, errors.New("unknown clientID, please, check your signing proxy configuration")
 	}
-	h.log.Log(" - Used default signer\n")
+	ll.Log(" - Used default signer")
 	return signerCfg, nil
 }
 
@@ -183,7 +185,22 @@ func (h *Handler) getClientIDFromBody(req *http.Request) (string, error) {
 }
 
 func (h *Handler) ServeHTTP(rw http.ResponseWriter, inReq *http.Request) {
-	h.log.Log("\nSend request:\n")
+	ll := h.log
+	if len(inReq.Header.Get(logger.HttpProxyNoLogging)) > 0 {
+		ll = logger.NoVerboseLogger
+	}
+	requestBody := h.proxy(rw, inReq, ll)
+	path := inReq.URL.Path
+	if path == tokenEndpoint && requestBody != nil {
+		uc := h.parseAuthTokenBody(requestBody)
+		if !uc.Empty() && h.userCredentialsCh != nil {
+			h.userCredentialsCh <- uc
+		}
+	}
+}
+
+func (h *Handler) proxy(rw http.ResponseWriter, inReq *http.Request, ll logger.Logger) []byte {
+	ll.Log("\nSend request:")
 	ctx, cancel := context.WithTimeout(inReq.Context(), h.cfg.DefaultTimeout)
 	defer cancel()
 
@@ -191,46 +208,46 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, inReq *http.Request) {
 	if err != nil {
 		err = errors.Wrap(err, "invalid clientID, please, check your signing proxy configuration")
 		h.writeError(rw, http.StatusInternalServerError, err)
-		return
+		return nil
 	}
-	h.log.LogF(" - For Client ID: %s\n", clientID)
+	ll.LogF(" - For Client ID: %s", clientID)
 
-	signerCfg, err := h.getSignerConfig(clientID)
+	signerCfg, err := h.getSignerConfig(clientID, ll)
 	if err != nil {
-		h.log.Log("Signer not found")
+		ll.Log("Signer not found")
 		h.writeError(rw, http.StatusInternalServerError, err)
-		return
+		return nil
 	}
 
 	toUrl, err := url.Parse(signerCfg.KeyConfig.BaseUrl)
 	if err != nil {
-		h.log.Log("Wrong base URL")
+		ll.Log("Wrong base URL")
 		h.writeError(rw, http.StatusInternalServerError, err)
-		return
+		return nil
 	}
 	toUrl.Path = inReq.URL.Path
+
 	toUrl.RawQuery = inReq.URL.RawQuery
-	h.log.LogF(" - To url '%s'\n", toUrl.String())
+	ll.LogF(" - To url '%s'", toUrl.String())
 
-	body, err := io.ReadAll(inReq.Body)
+	requestBody, err := io.ReadAll(inReq.Body)
 	if err != nil {
 		h.writeError(rw, http.StatusInternalServerError, err)
-		return
+		return nil
 	}
-
-	outReq, err := http.NewRequestWithContext(ctx, inReq.Method, toUrl.String(), bytes.NewBuffer(body))
+	outReq, err := http.NewRequestWithContext(ctx, inReq.Method, toUrl.String(), bytes.NewBuffer(requestBody))
 	if err != nil {
 		h.writeError(rw, http.StatusInternalServerError, err)
-		return
+		return nil
 	}
 
-	h.copyHeaders(inReq, outReq)
+	h.copyHeaders(inReq, outReq, ll)
 
-	h.addRequiredHeaders(outReq)
+	h.addRequiredHeaders(outReq, ll)
 
 	sign := signerCfg.SignBuilder.GetDefaultPrivateKey()
 
-	httpClient := signer.NewHTTPClient(h.requestSigner, sign, h.log)
+	httpClient := signer.NewHTTPClient(h.requestSigner, sign, ll)
 
 	resp, err := httpClient.Do(outReq)
 	if err != nil {
@@ -243,23 +260,38 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, inReq *http.Request) {
 			h.writeError(rw, http.StatusInternalServerError, err)
 		}
 
-		return
+		return nil
 	}
 	defer resp.Body.Close()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		h.writeError(rw, http.StatusInternalServerError, err)
-		return
+		return nil
 	}
 
-	h.log.Log("\n=====================\n")
-	h.log.Log("Response:\n")
-	h.log.LogF(" - Status '%d'\n", resp.StatusCode)
-	h.log.LogF(" - Headers:\n")
+	ll.Log("\n=====================")
+	ll.Log("Response:")
+	ll.LogF(" - Status '%d'", resp.StatusCode)
+	ll.LogF(" - Headers:")
 	for key := range resp.Header {
-		h.log.LogF("    %s:%s\n", key, resp.Header[key])
+		ll.LogF("    %s:%s", key, resp.Header[key])
 	}
 
 	h.writeResponse(rw, resp.StatusCode, resp.Header, data)
+	return requestBody
+}
+
+func (h *Handler) parseAuthTokenBody(body []byte) tunnels.UserCredentials {
+	var res tunnels.UserCredentials
+	for _, keyValue := range strings.Split(string(body), "&") {
+		kv := strings.Split(keyValue, "=")
+		if kv[0] == "client_id" {
+			res.ClientID = strings.TrimSpace(kv[1])
+		}
+		if kv[0] == "client_secret" {
+			res.ClientSecret = strings.TrimSpace(kv[1])
+		}
+	}
+	return res
 }
