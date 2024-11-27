@@ -12,7 +12,7 @@ builds:
     ldflags:
       - -s -w -X github.com/upvestco/httpsignature-proxy/cmd.version={{.Version}} -X github.com/upvestco/httpsignature-proxy/cmd.commit={{.Commit}} -X github.com/upvestco/httpsignature-proxy/cmd.date={{.Date}} -X github.com/upvestco/httpsignature-proxy/cmd.builtBy=goreleaser
     env:
-      - CGO_ENABLED=0
+      - CGO_ENABLED=1
       - GO111MODULE=on
     mod_timestamp: "{{ .CommitTimestamp }}"
 archives:
