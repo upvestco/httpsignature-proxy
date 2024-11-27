@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	tb "github.com/nsf/termbox-go"
-	"golang.design/x/clipboard"
 )
 
 type Console struct {
@@ -33,12 +32,6 @@ func (c *Console) Size() (int, int) {
 }
 
 func Create(fg, bg tb.Attribute) *Console {
-
-	err := clipboard.Init()
-	if err != nil {
-		fmt.Println(err)
-		panic(err)
-	}
 
 	if err := tb.Init(); err != nil {
 		fmt.Println(err)
