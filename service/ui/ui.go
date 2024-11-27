@@ -11,10 +11,10 @@ import (
 
 	"github.com/google/uuid"
 	tb "github.com/nsf/termbox-go"
+	"github.com/tiagomelo/go-clipboard/clipboard"
 	"github.com/upvestco/httpsignature-proxy/service/logger"
 	"github.com/upvestco/httpsignature-proxy/service/ui/elements"
 	"github.com/upvestco/httpsignature-proxy/service/ui/window"
-	"golang.design/x/clipboard"
 )
 
 const (
@@ -213,7 +213,10 @@ func Create(onClose func()) {
 			buf.WriteString(line)
 			buf.WriteString("\n")
 		}
-		clipboard.Write(clipboard.FmtText, buf.Bytes())
+		c := clipboard.New()
+		if err := c.CopyText(buf.String()); err != nil {
+			AddLogs(err.Error())
+		}
 	})
 	hLine.Add(copyHeadersButton)
 
@@ -243,7 +246,10 @@ func Create(onClose func()) {
 		if selected == nil {
 			return
 		}
-		clipboard.Write(clipboard.FmtText, selected.source)
+		c := clipboard.New()
+		if err := c.CopyText(string(selected.source)); err != nil {
+			AddLogs(err.Error())
+		}
 	})
 	hLine.Add(copyEventButton)
 
@@ -274,7 +280,10 @@ func Create(onClose func()) {
 		for _, item := range logsList.GetItems() {
 			b.WriteString(item.String() + "\n")
 		}
-		clipboard.Write(clipboard.FmtText, b.Bytes())
+		c := clipboard.New()
+		if err := c.CopyText(b.String()); err != nil {
+			AddLogs(err.Error())
+		}
 	})
 
 	mainFrame.Add(copyLogsButton)
