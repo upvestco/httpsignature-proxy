@@ -5,21 +5,21 @@
 class HttpsignatureProxy < Formula
   desc "Localhost HTTP Signatures proxy."
   homepage "https://github.com/upvestco/httpsignature-proxy"
-  version "1.3.13"
+  version "1.3.14"
   license "Apache 2.0"
 
   on_macos do
     on_intel do
-      url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.3.13/httpsignature-proxy_v1.3.13_darwin_amd64.tar.gz"
-      sha256 "34eca79e8c2a1dd10b8b543143c63659a6da1e27dd14abc9fd67f140c73717b4"
+      url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.3.14/httpsignature-proxy_v1.3.14_darwin_amd64.tar.gz"
+      sha256 "44fba1d9529e3c09584a015709baccc5a66a4802fe9196b4078c9082e4cabfac"
 
       def install
         bin.install "httpsignature-proxy"
       end
     end
     on_arm do
-      url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.3.13/httpsignature-proxy_v1.3.13_darwin_arm64.tar.gz"
-      sha256 "464af15e9007e4d66f19f14aa9110b42cae7e8313ffcd044388bf79b843e62ce"
+      url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.3.14/httpsignature-proxy_v1.3.14_darwin_arm64.tar.gz"
+      sha256 "86f96fc205ac730b38a11b2fdd935862be867546195c49dd9d3803de128a0ce3"
 
       def install
         bin.install "httpsignature-proxy"
@@ -30,8 +30,8 @@ class HttpsignatureProxy < Formula
   on_linux do
     on_intel do
       if Hardware::CPU.is_64_bit?
-        url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.3.13/httpsignature-proxy_v1.3.13_linux_amd64.tar.gz"
-        sha256 "deddb5263a666699ea24c1f876eb4d56b62f975b3ef4eac106b6e9b155bd3a71"
+        url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.3.14/httpsignature-proxy_v1.3.14_linux_amd64.tar.gz"
+        sha256 "0f95563803c6dc1c5f604b4f39aeab9e2486d490304fb744d8dba6b220d62660"
 
         def install
           bin.install "httpsignature-proxy"
@@ -40,8 +40,8 @@ class HttpsignatureProxy < Formula
     end
     on_arm do
       if Hardware::CPU.is_64_bit?
-        url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.3.13/httpsignature-proxy_v1.3.13_linux_arm64.tar.gz"
-        sha256 "6d629e235e2c6bd575d5e302620f71e8006725794e1ef1c0735aeaed21156c76"
+        url "https://github.com/upvestco/httpsignature-proxy/releases/download/v1.3.14/httpsignature-proxy_v1.3.14_linux_arm64.tar.gz"
+        sha256 "a383f78237ebb64d9ce4125d4a76aaa9d46a2cfa294e86fe69212d2a401deda1"
 
         def install
           bin.install "httpsignature-proxy"
