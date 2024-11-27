@@ -26,8 +26,8 @@ require (
 	github.com/gookit/color v1.5.4
 	github.com/neilotoole/jsoncolor v0.7.1
 	github.com/nsf/termbox-go v1.1.1
+	github.com/tiagomelo/go-clipboard v0.1.1
 	github.com/valyala/fastjson v1.6.4
-	golang.design/x/clipboard v0.7.0
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
 )
 
@@ -50,9 +50,6 @@ require (
 	github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
-	golang.org/x/exp/shiny v0.0.0-20241009180824-f66d83c29e7c // indirect
-	golang.org/x/image v0.18.0 // indirect
-	golang.org/x/mobile v0.0.0-20231127183840-76ac6878050a // indirect
 	golang.org/x/term v0.26.0 // indirect
 	golang.org/x/text v0.20.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
