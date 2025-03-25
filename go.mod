@@ -21,7 +21,7 @@ require (
 	github.com/gookit/color v1.5.4
 	github.com/neilotoole/jsoncolor v0.7.1
 	github.com/nsf/termbox-go v1.1.1
-	github.com/tiagomelo/go-clipboard v0.1.1
+	github.com/tiagomelo/go-clipboard v0.1.2
 	github.com/valyala/fastjson v1.6.4
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
 )
