@@ -33,7 +33,7 @@ import (
 	"github.com/upvestco/httpsignature-proxy/service/logger"
 	"github.com/upvestco/httpsignature-proxy/service/ui"
 	"golang.org/x/exp/maps"
-	"golang.org/x/exp/rand"
+	"golang.org/x/exp/rand" //nolint:staticcheck
 )
 
 var errTunnelNotAvailable = errors.New("events tunnel is not available")
