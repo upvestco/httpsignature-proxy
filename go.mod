@@ -6,7 +6,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/ory/x v0.0.706
+	github.com/ory/x v0.0.728
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/afero v1.12.0 // indirect
 	github.com/spf13/cobra v1.9.1
@@ -30,7 +30,7 @@ require (
 require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
-	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
+	github.com/go-viper/mapstructure/v2 v2.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
