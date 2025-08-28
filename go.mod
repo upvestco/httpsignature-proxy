@@ -19,7 +19,7 @@ require (
 )
 
 require (
-	github.com/gookit/color v1.5.4
+	github.com/gookit/color v1.6.0
 	github.com/neilotoole/jsoncolor v0.7.1
 	github.com/nsf/termbox-go v1.1.1
 	github.com/tiagomelo/go-clipboard v0.1.2
@@ -39,7 +39,7 @@ require (
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/cast v1.7.1 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778 // indirect
+	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/term v0.33.0 // indirect
