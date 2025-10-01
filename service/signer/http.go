@@ -57,12 +57,23 @@ type RoundTripper struct {
 
 // RoundTrip does the actual signing and sending.
 func (r RoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	bodyClosed := false
+	if req.Body != nil {
+		defer func() {
+			if !bodyClosed {
+				_ = req.Body.Close()
+			}
+		}()
+	}
+	req = req.Clone(req.Context()) // per RoundTripper contract.
+
 	err := r.signer.Sign(req, r.signingKey)
 	if err != nil {
 		r.log.LogF("signing error: %v", err)
 		return nil, ErrSigning
 	}
 
+	bodyClosed = true // r.Body is closed by the inner RoundTripper
 	rsp, err := r.inner.RoundTrip(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "signing proxy: unable to perform request")
