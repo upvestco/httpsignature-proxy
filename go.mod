@@ -23,7 +23,7 @@ require (
 	github.com/neilotoole/jsoncolor v0.7.1
 	github.com/nsf/termbox-go v1.1.1
 	github.com/tiagomelo/go-clipboard v0.1.2
-	github.com/valyala/fastjson v1.6.4
+	github.com/valyala/fastjson v1.6.5
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
 )
 
