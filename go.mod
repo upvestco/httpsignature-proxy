@@ -20,7 +20,7 @@ require (
 
 require (
 	github.com/gookit/color v1.6.0
-	github.com/neilotoole/jsoncolor v0.7.1
+	github.com/neilotoole/jsoncolor v0.7.2
 	github.com/nsf/termbox-go v1.1.1
 	github.com/tiagomelo/go-clipboard v0.1.2
 	github.com/valyala/fastjson v1.6.7
