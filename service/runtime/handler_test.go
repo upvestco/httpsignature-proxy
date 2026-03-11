@@ -54,7 +54,7 @@ func newTestHandler(t *testing.T, backendURL string, ch chan tunnels.UserCredent
 	return newHandler(cfg, signerConfigs, ch, logger.New(false)), clientID
 }
 
-func TestHandler_AuthToken_NoReaderOnChannel(t *testing.T) {
+func TestHandler_AuthToken_DoesNotBlockWithoutChannelReader(t *testing.T) {
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -81,7 +81,7 @@ func TestHandler_AuthToken_NoReaderOnChannel(t *testing.T) {
 	}
 }
 
-func TestHandler_AuthToken_WithReaderOnChannel(t *testing.T) {
+func TestHandler_AuthToken_ForwardsCredentialsToChannel(t *testing.T) {
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
