@@ -194,7 +194,14 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, inReq *http.Request) {
 	if path == tokenEndpoint && requestBody != nil {
 		uc := h.parseAuthTokenBody(requestBody)
 		if !uc.Empty() && h.userCredentialsCh != nil {
-			h.userCredentialsCh <- uc
+			// Non-blocking: the channel has no reader when tnls.Start()
+			// exits early (e.g. TunnelIsReady fails), which would deadlock
+			// this goroutine and hang the already-completed HTTP response.
+			select {
+			case h.userCredentialsCh <- uc:
+			default:
+				ll.Log("webhook listener not ready, skipping credentials forwarding")
+			}
 		}
 	}
 }
