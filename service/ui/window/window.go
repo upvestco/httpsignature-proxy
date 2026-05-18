@@ -34,7 +34,7 @@ func New(fg, bg tb.Attribute) *Window {
 		toUpdate: make(chan Drawable, 10),
 	}
 	e.InitView(WholeArea())
-	e.View.parent = e
+	e.parent = e
 
 	return e
 }

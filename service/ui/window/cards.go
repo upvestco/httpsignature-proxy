@@ -83,7 +83,7 @@ func (e *Cards) BringUp(id string) {
 }
 
 func (e *Cards) OnEvent(event tb.Event) {
-	if !e.View.IsEnabled() {
+	if !e.IsEnabled() {
 		return
 	}
 	if e.current != nil {

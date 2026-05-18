@@ -73,7 +73,7 @@ func AddPayload(payload PullItem, filter map[string]interface{}) {
 		v := elements.NewJSONView(window.WholeArea())
 		v.Set(ev)
 		events.Insert(id, v)
-		var s string = " "
+		var s = " "
 		if len(in.Payload) > 1 {
 			if i == 0 {
 				s = "┌"
