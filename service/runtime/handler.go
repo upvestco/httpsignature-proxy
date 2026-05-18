@@ -27,6 +27,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+
 	"github.com/upvestco/httpsignature-proxy/service/logger"
 	"github.com/upvestco/httpsignature-proxy/service/signer"
 	"github.com/upvestco/httpsignature-proxy/service/tunnels"
@@ -269,7 +270,9 @@ func (h *Handler) proxy(rw http.ResponseWriter, inReq *http.Request, ll logger.L
 
 		return nil
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {

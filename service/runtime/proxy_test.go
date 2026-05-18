@@ -31,6 +31,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+
 	"github.com/upvestco/httpsignature-proxy/config"
 	"github.com/upvestco/httpsignature-proxy/service/logger"
 	"github.com/upvestco/httpsignature-proxy/service/signer"
@@ -161,7 +162,9 @@ func (s *testService) Start(t *testing.T) {
 }
 
 func (s *testService) endpoint(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
+	defer func() {
+		_ = r.Body.Close()
+	}()
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -179,7 +182,9 @@ func (e *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	require.NoError(e.t, err)
 	require.True(e.t, len(body) != 0)
-	defer r.Body.Close()
+	defer func() {
+		_ = r.Body.Close()
+	}()
 	headers := r.Header
 	if val, ok := headers[material.SignatureHeader]; !ok || val == nil {
 		e.t.Error("request doesn't have signature header")
