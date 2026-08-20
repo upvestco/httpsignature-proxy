@@ -31,20 +31,21 @@ var _ http.RoundTripper = (*RoundTripper)(nil)
 var ErrSigning = errors.New("signing proxy: unable to sign request")
 
 // NewHTTPClient will create a new http.Client and add the signing transport to it.
-func NewHTTPClient(signer request.Signer, signingKey request.RequestSigner, log logger.Logger) *http.Client {
+func NewHTTPClient(signer request.Signer, signingKey request.RequestSigner, log logger.Logger, inReq *http.Request) *http.Client {
 	return &http.Client{
-		Transport: NewTransport(http.DefaultTransport, signer, signingKey, log),
+		Transport: NewTransport(http.DefaultTransport, signer, signingKey, log, inReq),
 	}
 }
 
 // NewTransport will create a new http.RoundTripper that can be used in http.Client to sign requests transparently.
 // Underlying http.RoundTripper cannot be nil, if unsure, you can use http.DefaultTransport.
-func NewTransport(inner http.RoundTripper, signer request.Signer, signingKey request.RequestSigner, log logger.Logger) *RoundTripper {
+func NewTransport(inner http.RoundTripper, signer request.Signer, signingKey request.RequestSigner, log logger.Logger, inReq *http.Request) *RoundTripper {
 	return &RoundTripper{
 		inner:      inner,
 		signer:     signer,
 		signingKey: signingKey,
 		log:        log,
+		inReq:      inReq,
 	}
 }
 
@@ -54,6 +55,7 @@ type RoundTripper struct {
 	signer     request.Signer
 	signingKey request.RequestSigner
 	log        logger.Logger
+	inReq      *http.Request
 }
 
 // RoundTrip does the actual signing and sending.
@@ -63,7 +65,7 @@ func (r RoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		r.log.LogF("signing error: %v", err)
 		return nil, ErrSigning
 	}
-	origUserAgent := req.Header.Get("User-Agent")
+	origUserAgent := r.inReq.Header.Get("User-Agent")
 	if origUserAgent != "" {
 		req.Header.Set("User-Agent-Orig", origUserAgent)
 	}

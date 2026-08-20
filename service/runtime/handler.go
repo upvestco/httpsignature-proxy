@@ -255,7 +255,7 @@ func (h *Handler) proxy(rw http.ResponseWriter, inReq *http.Request, ll logger.L
 
 	sign := signerCfg.SignBuilder.GetDefaultPrivateKey()
 
-	httpClient := signer.NewHTTPClient(h.requestSigner, sign, ll)
+	httpClient := signer.NewHTTPClient(h.requestSigner, sign, ll, inReq)
 
 	resp, err := httpClient.Do(outReq)
 	if err != nil {
