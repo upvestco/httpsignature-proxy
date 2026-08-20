@@ -20,6 +20,7 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+
 	"github.com/upvestco/httpsignature-proxy/service/logger"
 
 	"github.com/upvestco/httpsignature-proxy/service/signer/request"
@@ -62,7 +63,11 @@ func (r RoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		r.log.LogF("signing error: %v", err)
 		return nil, ErrSigning
 	}
-
+	origUserAgent := req.Header.Get("User-Agent")
+	if origUserAgent != "" {
+		req.Header.Set("User-Agent-Orig", origUserAgent)
+	}
+	req.Header.Set("User-Agent", "upvest-httpsignature-proxy")
 	rsp, err := r.inner.RoundTrip(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "signing proxy: unable to perform request")
