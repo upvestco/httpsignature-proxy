@@ -18,7 +18,7 @@ require (
 )
 
 require (
-	github.com/gookit/color v1.6.1
+	github.com/gookit/color v1.6.2
 	github.com/neilotoole/jsoncolor v0.10.1
 	github.com/nsf/termbox-go v1.1.2
 	github.com/tiagomelo/go-clipboard v0.1.2
